@@ -8,8 +8,8 @@ LabFit은 교수님을 평가하거나 순위를 매기는 앱이 아닙니다. 
 
 ```powershell
 cd backend
+Copy-Item .env.example .env
 python -m pip install -r requirements.txt
-$env:LABFIT_USE_MOCK_ONLY="1"
 python -m uvicorn app.main:app --reload
 ```
 
@@ -19,11 +19,47 @@ API 문서는 `http://127.0.0.1:8000/docs`에서 확인할 수 있습니다.
 
 ```powershell
 cd frontend
+Copy-Item .env.example .env.local
 npm.cmd install
 npm.cmd run dev
 ```
 
 프론트는 기본 mock mode로도 전체 화면 흐름을 볼 수 있습니다. 실제 backend에 연결하려면 `NEXT_PUBLIC_USE_MOCKS=false`와 `NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000`을 설정하세요.
+
+## 환경변수 복구
+
+실행 설정 파일이 없으면 예시 파일을 복사해서 시작합니다.
+
+```powershell
+cd backend
+Copy-Item .env.example .env
+```
+
+Gemini API 키가 있으면 `LABFIT_LLM_API_KEY`에 넣습니다.
+
+```env
+LABFIT_LLM_PROVIDER=gemini
+LABFIT_LLM_MODEL=gemini-1.5-flash
+LABFIT_LLM_API_KEY=발급받은 키
+```
+
+키가 없어도 앱은 기존 규칙 기반/템플릿 fallback으로 동작합니다. `.env`와 `.env.local`은 GitHub에 올리지 않습니다.
+
+```powershell
+cd frontend
+Copy-Item .env.example .env.local
+```
+
+권장 실행 명령어:
+
+```powershell
+cd backend
+.\.venv\Scripts\Activate.ps1
+python -m uvicorn app.main:app --reload
+
+cd ..\frontend
+npm.cmd run dev
+```
 
 ## 현재 수집 구조
 
@@ -42,4 +78,4 @@ npm.cmd run dev
 
 연구 경향성은 accepted 논문 중심으로 만들고, needs_review 논문은 낮은 가중치의 보조 근거로만 사용합니다. 공개 논문이 부족하면 공식 연구분야와 연구실 소개 키워드를 활용하며, LLM API가 없어도 템플릿 기반 fallback이 동작합니다.
 
-LLM은 연구력 평가나 논문 진위 판정자가 아닙니다. 이미 정제된 키워드와 논문 근거를 읽기 쉬운 문장으로 정리하는 역할만 맡도록 분리되어 있습니다.
+Gemini LLM은 논문 요약과 연구 경향 문장화에만 사용합니다. 교수님 평가, 순위화, 논문 진위 판정에는 사용하지 않습니다. 제공된 논문 제목, 초록, 키워드, 연도, 학술지, 출처 데이터만 근거로 사용하며, 호출 실패나 JSON 파싱 실패가 발생하면 기존 템플릿 fallback으로 응답합니다.

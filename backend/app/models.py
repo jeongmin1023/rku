@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -119,12 +119,16 @@ class AnalysisResult(Base):
     overall_keywords: Mapped[str | None] = mapped_column(Text)
     timeline_json: Mapped[str | None] = mapped_column(Text)
     trend_confidence: Mapped[str] = mapped_column(String(20), default="low")
+    main_research_axis_json: Mapped[str | None] = mapped_column(Text)
+    recent_shift: Mapped[str | None] = mapped_column(Text)
     representative_papers_json: Mapped[str | None] = mapped_column(Text)
     recent_important_papers_json: Mapped[str | None] = mapped_column(Text)
     recent_papers_json: Mapped[str | None] = mapped_column(Text)
     interest_related_papers_json: Mapped[str | None] = mapped_column(Text)
     supporting_papers_json: Mapped[str | None] = mapped_column(Text)
     excluded_papers_count: Mapped[int] = mapped_column(Integer, default=0)
+    llm_used: Mapped[bool] = mapped_column(Boolean, default=False)
+    llm_provider: Mapped[str | None] = mapped_column(String(50))
     evidence_confidence: Mapped[str] = mapped_column(String(20), default="low")
     warnings_json: Mapped[str | None] = mapped_column(Text)
 

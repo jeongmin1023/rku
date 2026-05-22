@@ -114,11 +114,20 @@ class ProfessorPaperOut(BaseModel):
     author_role: str | None = None
     evidence_notes: dict[str, Any] = Field(default_factory=dict)
     warnings: list[str] = Field(default_factory=list)
+    paper_summary: str | None = None
+    main_topic: str | None = None
+    method_or_focus: str | None = None
+    why_it_matters: str | None = None
+    summary_limitations: list[str] = Field(default_factory=list)
+    why_read_this: str | None = None
+    category_reason: str | None = None
 
 
 class AnalysisOut(BaseModel):
     trend_summary: str
     detailed_trend_summary: str | None = None
+    main_research_axis: list[str] = Field(default_factory=list)
+    recent_shift: str | None = None
     recent_keywords: list[str]
     five_year_keywords: list[str]
     overall_keywords: list[str]
@@ -132,6 +141,8 @@ class AnalysisOut(BaseModel):
     excluded_papers_count: int = 0
     evidence_confidence: str
     warnings: list[str]
+    llm_used: bool = False
+    llm_provider: str | None = None
 
 
 class ProfessorCardOut(ProfessorOut):
@@ -141,6 +152,8 @@ class ProfessorCardOut(ProfessorOut):
     five_year_keywords: list[str] = Field(default_factory=list)
     overall_keywords: list[str] = Field(default_factory=list)
     trend_confidence: str = "low"
+    llm_used: bool = False
+    llm_provider: str | None = None
     warnings: list[str] = Field(default_factory=list)
     accepted_paper_count: int = 0
     needs_review_paper_count: int = 0

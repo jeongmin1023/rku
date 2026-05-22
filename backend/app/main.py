@@ -1,8 +1,18 @@
 from __future__ import annotations
 
+import os
+
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
+
+try:
+    from dotenv import load_dotenv
+except ImportError:  # pragma: no cover - dependency is listed, fallback keeps local dev resilient.
+    def load_dotenv() -> bool:
+        return False
+
+load_dotenv()
 
 from app.database import get_db, init_db
 from app.models import Department, Professor
@@ -31,7 +41,11 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        origin.strip()
+        for origin in os.getenv("CORS_ALLOW_ORIGINS", "*").split(",")
+        if origin.strip()
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

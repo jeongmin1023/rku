@@ -37,6 +37,8 @@ export type ProfessorCard = Professor & {
   five_year_keywords?: string[];
   overall_keywords?: string[];
   trend_confidence?: Confidence | string;
+  llm_used?: boolean;
+  llm_provider?: string | null;
   warnings: string[];
   accepted_paper_count?: number;
   needs_review_paper_count?: number;
@@ -62,6 +64,13 @@ export type CrawlResponse = {
   department: Department;
   professors: Professor[];
   warnings: string[];
+  paper_summary?: string | null;
+  main_topic?: string | null;
+  method_or_focus?: string | null;
+  why_it_matters?: string | null;
+  summary_limitations?: string[];
+  why_read_this?: string | null;
+  category_reason?: string | null;
 };
 
 export type ConfirmProfessor = {
@@ -124,11 +133,18 @@ export type AnalysisPaper = {
   reason?: string;
   category_reason?: string;
   why_read_this?: string;
+  paper_summary?: string | null;
+  main_topic?: string | null;
+  method_or_focus?: string | null;
+  why_it_matters?: string | null;
+  summary_limitations?: string[];
 };
 
 export type Analysis = {
   trend_summary: string;
   detailed_trend_summary?: string | null;
+  main_research_axis?: string[];
+  recent_shift?: string | null;
   recent_keywords: string[];
   five_year_keywords: string[];
   overall_keywords: string[];
@@ -142,6 +158,8 @@ export type Analysis = {
   excluded_papers_count?: number;
   evidence_confidence: Confidence | string;
   warnings: string[];
+  llm_used?: boolean;
+  llm_provider?: string | null;
 };
 
 export type ProfessorDetail = Professor & {
@@ -199,6 +217,9 @@ export type ContactCard = {
     year?: number | null;
     venue?: string | null;
     why_read: string;
+    paper_summary?: string | null;
+    why_read_this?: string | null;
+    category_reason?: string | null;
     category: string;
   }>;
   questions: string[];

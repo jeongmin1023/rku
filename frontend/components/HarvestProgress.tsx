@@ -1,10 +1,23 @@
-import { AlertTriangle, CheckCircle2, Database, Loader2, ShieldCheck, XCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Database, ShieldCheck, XCircle } from "lucide-react";
 
 import { Badge } from "@/components/Badge";
 import { SectionTitle } from "@/components/StateBlocks";
-import type { HarvestDepartmentResponse, HarvestProfessorResult } from "@/lib/types";
+import type { ConfirmProfessor, HarvestDepartmentResponse, HarvestProfessorResult } from "@/lib/types";
 
-export function HarvestProgress({ harvesting, result }: { harvesting: boolean; result?: HarvestDepartmentResponse | null }) {
+export function HarvestProgress({
+  harvesting,
+  result,
+  draft = []
+}: {
+  harvesting: boolean;
+  result?: HarvestDepartmentResponse | null;
+  draft?: ConfirmProfessor[];
+}) {
+  const rows = result?.results ?? [];
+  const total = harvesting ? Math.max(draft.length, 1) : Math.max(rows.length, 1);
+  const complete = harvesting ? Math.max(1, Math.floor(total * 0.45)) : rows.length;
+  const percentValue = Math.round((complete / total) * 100);
+
   return (
     <section className="space-y-5">
       <SectionTitle
@@ -13,24 +26,46 @@ export function HarvestProgress({ harvesting, result }: { harvesting: boolean; r
         description="여러 국내 학술 데이터 소스에서 가져온 후보를 표준화하고 중복 병합한 뒤, 교수님과의 매칭 근거를 계산합니다."
       />
 
-      {harvesting ? (
-        <div className="rounded-md border border-line bg-white p-5 shadow-soft">
-          <div className="flex items-center gap-3">
-            <Loader2 className="h-5 w-5 animate-spin text-bluepoint" />
-            <div>
-              <p className="font-semibold text-navy-900">수집과 병합을 진행 중입니다.</p>
-              <p className="mt-1 text-sm leading-6 text-slate-600">
-                KCI, RISS, DBpia, ScienceON 등 국내 학술 데이터 소스에서 논문 후보를 수집하고 있습니다.
-              </p>
-            </div>
+      <div className="sticky top-24 z-10 rounded-md border border-warm-gray/20 bg-dark-purple p-4 shadow-soft">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold text-white">{harvesting ? "논문 후보 수집 진행 중" : "수집 결과 정리 완료"}</p>
+            <p className="mt-1 text-xs text-warm-gray">교수별 후보 수집, 중복 병합, 매칭 근거 계산</p>
           </div>
+          <span className="text-2xl font-bold text-gold">{percentValue}%</span>
+        </div>
+        <div className="mt-4 h-2 overflow-hidden rounded-full bg-dark-green">
+          <div className="progress-stripes h-full rounded-full" style={{ width: `${percentValue}%` }} />
+        </div>
+      </div>
+
+      {harvesting && draft.length ? (
+        <div className="space-y-3">
+          {draft.map((professor, index) => (
+            <div
+              key={`${professor.name}-${index}`}
+              className="card-enter rounded-md border border-warm-gray/20 bg-dark-purple p-4 shadow-soft"
+              style={{ animationDelay: `${index * 70}ms` }}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="font-semibold text-white">{professor.name}</p>
+                  <p className="mt-1 text-xs text-warm-gray">{professor.lab_name || professor.official_keywords || "공개 논문 후보 확인 중"}</p>
+                </div>
+                <Badge tone={index < complete ? "gold" : "muted"}>{index < complete ? "진행 중" : "대기"}</Badge>
+              </div>
+              <div className="mt-3 h-2 overflow-hidden rounded-full bg-dark-green">
+                <div className="progress-stripes h-full rounded-full" style={{ width: `${index < complete ? 72 : 16}%` }} />
+              </div>
+            </div>
+          ))}
         </div>
       ) : null}
 
       {result ? (
         <div className="space-y-4">
-          {result.results.map((item) => (
-            <ProfessorHarvestSummary key={item.professor.id} item={item} />
+          {result.results.map((item, index) => (
+            <ProfessorHarvestSummary key={item.professor.id} item={item} index={index} />
           ))}
         </div>
       ) : null}
@@ -38,7 +73,7 @@ export function HarvestProgress({ harvesting, result }: { harvesting: boolean; r
   );
 }
 
-function ProfessorHarvestSummary({ item }: { item: HarvestProfessorResult }) {
+function ProfessorHarvestSummary({ item, index }: { item: HarvestProfessorResult; index: number }) {
   const accepted = item.accepted_count ?? 0;
   const needsReview = item.needs_review_count ?? 0;
   const weak = item.weak_candidate_count ?? 0;
@@ -55,17 +90,17 @@ function ProfessorHarvestSummary({ item }: { item: HarvestProfessorResult }) {
   const statusLabel = analysisReady > 0 ? "분석 사용 가능" : candidatePool > 0 ? "검증 후 사용 가능" : "매칭 근거 확인 필요";
 
   return (
-    <article className="rounded-md border border-line bg-white p-5 shadow-soft">
+    <article className="card-enter rounded-md border border-warm-gray/20 bg-dark-purple p-5 shadow-soft" style={{ animationDelay: `${index * 70}ms` }}>
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-lg font-bold text-navy-900">{item.professor.name}</h3>
-            <Badge>{statusLabel}</Badge>
+            <h3 className="text-lg font-bold text-white">{item.professor.name}</h3>
+            <Badge tone={analysisReady > 0 ? "green" : "gold"}>{statusLabel}</Badge>
           </div>
-          <p className="mt-1 text-sm text-slate-600">{item.professor.lab_name || "연구실명 확인 필요"}</p>
+          <p className="mt-1 text-sm text-warm-gray">{item.professor.lab_name || "연구실명 확인 필요"}</p>
         </div>
-        <div className="text-sm text-slate-600">
-          분석 사용 가능률 <span className="font-bold text-navy-900">{usableRate}%</span>
+        <div className="text-sm text-warm-gray">
+          분석 사용 가능률 <span className="font-bold text-gold">{usableRate}%</span>
         </div>
       </div>
 
@@ -83,9 +118,9 @@ function ProfessorHarvestSummary({ item }: { item: HarvestProfessorResult }) {
         <Metric icon={<XCircle className="h-4 w-4" />} label="분석 제외" value={excluded} help="rejected" />
       </div>
 
-      <div className="mt-5 rounded-md bg-mist p-4 text-sm leading-6 text-slate-700">
+      <div className="mt-5 rounded-md bg-dark-green p-4 text-sm leading-6 text-[#F0EDE8]">
         <p>
-          <strong className="text-navy-900">해석:</strong> 총 {masterCount}개의 정리된 논문 중 {analysisReady}개는 분석에 사용하고,
+          <strong className="text-gold">해석:</strong> 총 {masterCount}개의 정리된 논문 중 {analysisReady}개는 분석에 사용하고,
           {reviewCandidates}개는 검증 후보로 남겼으며, {excluded}개는 기본 분석에서 제외했습니다.
         </p>
         <p className="mt-1">
@@ -98,13 +133,13 @@ function ProfessorHarvestSummary({ item }: { item: HarvestProfessorResult }) {
 
 function Metric({ icon, label, value, help }: { icon: React.ReactNode; label: string; value: number; help: string }) {
   return (
-    <div className="rounded-md border border-line bg-white p-4">
-      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+    <div className="rounded-md border border-warm-gray/20 bg-[#2E2838] p-4">
+      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-warm-gray">
         {icon}
         {label}
       </div>
-      <div className="mt-2 text-2xl font-bold text-navy-900">{value ?? 0}</div>
-      <p className="mt-1 text-xs leading-5 text-slate-500">{help}</p>
+      <div className="mt-2 text-2xl font-bold text-gold">{value ?? 0}</div>
+      <p className="mt-1 text-xs leading-5 text-warm-gray">{help}</p>
     </div>
   );
 }

@@ -29,6 +29,8 @@ def professor_cards(professors: list[Professor]) -> list[dict]:
                 "five_year_keywords": analysis["five_year_keywords"],
                 "overall_keywords": analysis["overall_keywords"],
                 "trend_confidence": analysis["trend_confidence"],
+                "llm_used": analysis.get("llm_used", False),
+                "llm_provider": analysis.get("llm_provider"),
                 "warnings": analysis["warnings"],
                 "accepted_paper_count": status_counts["accepted"],
                 "needs_review_paper_count": status_counts["needs_review"],

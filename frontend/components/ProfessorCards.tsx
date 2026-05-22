@@ -62,8 +62,8 @@ export function ProfessorCards({
           {filters.map((item) => (
             <button
               key={item.key}
-              className={`focus-ring rounded-full border px-3 py-1.5 text-sm font-semibold ${
-                filter === item.key ? "border-navy-900 bg-navy-900 text-white" : "border-line bg-white text-slate-700 hover:bg-mist"
+              className={`focus-ring rounded-md border px-3 py-1.5 text-sm font-semibold transition duration-150 ${
+                filter === item.key ? "border-gold bg-gold text-[#1E2420]" : "border-warm-gray/20 bg-dark-purple text-warm-gray hover:bg-dark-green hover:text-white"
               }`}
               onClick={() => onFilterChange(item.key)}
               type="button"
@@ -77,22 +77,26 @@ export function ProfessorCards({
       {!filtered.length ? (
         <EmptyState message="조건에 맞는 교수님 카드가 없습니다. 필터를 바꾸거나 관심 주제를 더 넓게 입력해보세요." />
       ) : (
-        <div className="grid gap-4 lg:grid-cols-3">
-          {filtered.map((card) => {
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {filtered.map((card, index) => {
             const selected = compareIds.includes(card.id);
             const compareDisabled = !selected && compareIds.length >= 3;
             const accepted = card.accepted_paper_count ?? card.accepted_count ?? 0;
             const needsReview = card.needs_review_paper_count ?? card.needs_review_count ?? 0;
             return (
-              <article key={card.id} className="flex min-h-full flex-col rounded-md border border-line bg-white p-5 shadow-soft">
+              <article
+                key={card.id}
+                className="card-enter flex min-h-full flex-col rounded-md border border-warm-gray/20 bg-dark-purple p-5 shadow-soft transition duration-150 hover:-translate-y-1 hover:bg-dark-green"
+                style={{ animationDelay: `${index * 70}ms` }}
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h3 className="text-lg font-semibold text-navy-900">{card.name}</h3>
-                    <p className="mt-1 text-sm text-slate-600">{card.lab_name || "연구실명 확인 필요"}</p>
+                    <h3 className="text-lg font-semibold text-white">{card.name}</h3>
+                    <p className="mt-1 text-sm text-warm-gray">{card.lab_name || "연구실명 확인 필요"}</p>
                   </div>
                   <button
                     className={`focus-ring inline-flex h-9 w-9 items-center justify-center rounded-md border ${
-                      selected ? "border-bluepoint bg-bluepoint text-white" : "border-line bg-white text-slate-600 hover:bg-mist"
+                      selected ? "border-gold bg-gold text-[#1E2420]" : "border-warm-gray/20 bg-[#2E2838] text-warm-gray hover:bg-dark-green hover:text-white"
                     } disabled:cursor-not-allowed disabled:opacity-45`}
                     type="button"
                     onClick={() => onToggleCompare(card.id)}
@@ -110,38 +114,38 @@ export function ProfessorCards({
 
                 <div className="mt-4 flex flex-wrap gap-2">
                   {card.keywords.slice(0, 5).map((keyword) => (
-                    <span key={keyword} className="rounded-full bg-mist px-2.5 py-1 text-xs font-semibold text-slate-700">
+                    <span key={keyword} className="rounded-full border border-purple/30 bg-purple/15 px-2.5 py-1 text-xs font-semibold text-purple">
                       {keyword}
                     </span>
                   ))}
                 </div>
 
-                <p className="mt-4 text-sm leading-6 text-slate-700">
-                  <span className="font-semibold text-navy-900">연구 경향: </span>
+                <p className="mt-4 text-sm leading-6 text-[#F0EDE8]">
+                  <span className="font-semibold text-gold">연구 경향: </span>
                   {card.trend_summary || "공개 논문 데이터가 충분하지 않습니다. 연구실 소개와 교수소개 페이지를 중심으로 확인하세요."}
                 </p>
 
                 <div className="mt-4 flex flex-wrap gap-2">
                   {Object.entries(card.source_coverage ?? {}).map(([source, count]) => (
-                    <Badge key={source} tone="slate">
+                    <Badge key={source} tone="muted">
                       {source} {count}
                     </Badge>
                   ))}
                 </div>
 
                 <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                  <div className="rounded-md bg-mist p-3">
-                    <p className="text-xs text-slate-500">분석 사용 가능</p>
-                    <p className="mt-1 text-lg font-bold text-navy-900">{accepted}</p>
+                  <div className="rounded-md bg-[#2E2838] p-3">
+                    <p className="text-xs text-warm-gray">분석 사용 가능</p>
+                    <p className="mt-1 text-lg font-bold text-green">{accepted}</p>
                   </div>
-                  <div className="rounded-md bg-mist p-3">
-                    <p className="text-xs text-slate-500">검증 필요</p>
-                    <p className="mt-1 text-lg font-bold text-navy-900">{needsReview}</p>
+                  <div className="rounded-md bg-[#2E2838] p-3">
+                    <p className="text-xs text-warm-gray">핏 레벨</p>
+                    <p className="mt-1 text-lg font-bold text-gold">{needsReview ? "Medium" : "Ready"}</p>
                   </div>
                 </div>
 
                 <button
-                  className="focus-ring mt-5 inline-flex items-center justify-center gap-2 rounded-md bg-navy-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-navy-800"
+                  className="focus-ring mt-5 inline-flex items-center justify-center gap-2 rounded-md bg-gold px-4 py-2.5 text-sm font-bold text-[#1E2420] transition duration-150 hover:scale-[1.02] hover:bg-[#C89A5E]"
                   type="button"
                   onClick={() => onOpenDetail(card.id)}
                 >

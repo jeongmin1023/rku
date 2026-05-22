@@ -5,6 +5,9 @@ from datetime import UTC, datetime
 from typing import Any
 
 from app.analysis.keyword_extractor import extract_keywords, similarity
+from app.analysis.llm_keyword_refiner import refine_keywords
+from app.analysis.llm_paper_classifier import classify_papers
+from app.analysis.llm_paper_summarizer import summarize_paper
 from app.analysis.llm_trend_summarizer import summarize_trend
 from app.papers.author_role import author_role_weight
 
@@ -19,6 +22,7 @@ def analyze_trends(
     professor: Any | None = None,
 ) -> dict[str, Any]:
     current_year = datetime.now(UTC).year
+    papers = [_with_paper_summary(paper) for paper in papers]
     accepted = [paper for paper in papers if paper.get("match_status") == "accepted"]
     review = [paper for paper in papers if paper.get("match_status") == "needs_review"]
     weak = [paper for paper in papers if paper.get("match_status") == "weak_candidate"]
@@ -61,6 +65,23 @@ def analyze_trends(
     if len(overall_keywords) < 2:
         warnings.append("공개 논문 키워드 부족")
 
+    keyword_refinement = refine_keywords(
+        {
+            "professor_name": getattr(professor, "name", None),
+            "official_keywords": official_list,
+            "raw_keywords": list(dict.fromkeys([*overall_keywords, *recent_keywords, *five_year_keywords])),
+            "papers": analysis_pool,
+        },
+        {
+            "overall_keywords": overall_keywords,
+            "recent_keywords": recent_keywords or official_list[:5],
+            "five_year_keywords": five_year_keywords or official_list[:5],
+        },
+    )
+    overall_keywords = keyword_refinement["overall_keywords"]
+    recent_keywords = keyword_refinement["recent_keywords"]
+    five_year_keywords = keyword_refinement["five_year_keywords"]
+
     timeline = _timeline(analysis_pool, current_year, exclude_terms)
     emerging = _is_emerging_lab(professor, accepted, five_year)
     if emerging:
@@ -77,28 +98,59 @@ def analyze_trends(
     representative = select_representative_papers(accepted or review or weak, overall_keywords, current_year)
     recent_important = select_recent_important_papers(recent_3 or five_year or accepted or review, recent_keywords, current_year)
     supporting = select_supporting_papers(review + weak, current_year)
+    category_refinement = classify_papers(
+        {
+            "professor_name": getattr(professor, "name", None),
+            "overall_keywords": overall_keywords,
+            "recent_keywords": recent_keywords,
+            "candidate_papers": _candidate_papers_for_llm(accepted + review + weak, overall_keywords, recent_keywords, current_year),
+        },
+        {
+            "representative_papers": representative,
+            "recent_important_papers": recent_important,
+            "interest_related_papers": [],
+            "supporting_papers": supporting,
+        },
+    )
+    representative = category_refinement["representative_papers"]
+    recent_important = category_refinement["recent_important_papers"]
+    supporting = category_refinement["supporting_papers"]
     llm_payload = {
         "professor_name": getattr(professor, "name", None),
         "official_keywords": official_list,
+        "overall_keywords": overall_keywords,
+        "recent_keywords": recent_keywords,
+        "five_year_keywords": five_year_keywords,
         "recent_3_year_keywords": recent_keywords,
         "recent_5_year_keywords": five_year_keywords,
         "older_keywords": _older_keywords(analysis_pool, current_year, exclude_terms),
+        "timeline": _timeline_for_llm(analysis_pool),
+        "papers": analysis_pool,
         "representative_papers": representative,
         "evidence_confidence": evidence_confidence,
         "warnings": warnings,
     }
     summary = summarize_trend(llm_payload)
+    llm_used = any(
+        [
+            summary.get("llm_used"),
+            keyword_refinement.get("llm_used"),
+            category_refinement.get("llm_used"),
+            any(paper.get("llm_used") for paper in papers),
+        ]
+    )
+    llm_provider = summary.get("llm_provider") or keyword_refinement.get("llm_provider") or category_refinement.get("llm_provider")
 
     return {
         "trend_summary": summary["trend_summary"],
         "detailed_trend_summary": summary["detailed_trend_summary"],
         "main_research_axis": summary["main_research_axis"],
         "recent_shift": summary["recent_shift"],
-        "recent_keywords": recent_keywords or official_list[:5],
-        "five_year_keywords": five_year_keywords or official_list[:5],
+        "recent_keywords": recent_keywords,
+        "five_year_keywords": five_year_keywords,
         "overall_keywords": overall_keywords,
         "timeline": timeline,
-        "trend_confidence": summary["confidence"],
+        "trend_confidence": summary.get("trend_confidence") or summary["confidence"],
         "representative_papers": representative,
         "recent_important_papers": recent_important,
         "recent_papers": recent_important,
@@ -106,8 +158,18 @@ def analyze_trends(
         "supporting_papers": supporting,
         "excluded_papers_count": len(rejected),
         "evidence_confidence": evidence_confidence,
-        "warnings": list(dict.fromkeys(summary["warnings"])),
+        "warnings": list(
+            dict.fromkeys(
+                [
+                    *summary["warnings"],
+                    *keyword_refinement.get("warnings", []),
+                    *category_refinement.get("warnings", []),
+                ]
+            )
+        ),
         "analysis_type": analysis_type,
+        "llm_used": llm_used,
+        "llm_provider": llm_provider,
     }
 
 
@@ -302,7 +364,85 @@ def _paper_item(paper: dict[str, Any], category: str, label: str, reason: str, w
         "category_reason": reason,
         "why_read_this": why,
         "reason": reason,
+        "paper_summary": paper.get("paper_summary"),
+        "main_topic": paper.get("main_topic"),
+        "method_or_focus": paper.get("method_or_focus"),
+        "why_it_matters": paper.get("why_it_matters"),
+        "summary_limitations": paper.get("summary_limitations", []),
     }
+
+
+def _with_paper_summary(paper: dict[str, Any]) -> dict[str, Any]:
+    clone = dict(paper)
+    summary = summarize_paper(clone)
+    clone.update(summary)
+    return clone
+
+
+def _timeline_for_llm(papers: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    by_year: dict[int, list[dict[str, Any]]] = defaultdict(list)
+    for paper in papers:
+        if paper.get("year"):
+            by_year[int(paper["year"])].append(paper)
+    return [
+        {
+            "period": str(year),
+            "keywords": _concepts(year_papers)[:6],
+            "paper_titles": [paper.get("display_title") for paper in year_papers if paper.get("display_title")][:5],
+        }
+        for year, year_papers in sorted(by_year.items())
+    ]
+
+
+def _candidate_papers_for_llm(
+    papers: list[dict[str, Any]],
+    overall_keywords: list[str],
+    recent_keywords: list[str],
+    current_year: int,
+) -> list[dict[str, Any]]:
+    candidates: list[dict[str, Any]] = []
+    for paper in papers:
+        if paper.get("match_status") == "rejected":
+            continue
+        candidates.append(
+            {
+                "id": paper.get("id"),
+                "title": paper.get("display_title"),
+                "year": paper.get("year"),
+                "paper_summary": paper.get("paper_summary"),
+                "abstract": paper.get("abstract"),
+                "keywords": paper.get("keywords") or [],
+                "source_list": paper.get("source_list") or [],
+                "match_status": paper.get("match_status"),
+                "author_role": paper.get("author_role"),
+                "scores": {
+                    "representative": _representative_score(paper, overall_keywords, current_year),
+                    "recent": _recent_importance_score(paper, recent_keywords, current_year),
+                },
+            }
+        )
+    return candidates
+
+
+def _representative_score(paper: dict[str, Any], keywords: list[str], current_year: int) -> float:
+    return (
+        0.25 * _citation_signal(paper)
+        + 0.25 * _topic_centrality(paper, keywords)
+        + 0.20 * author_role_weight(paper.get("author_role"))
+        + 0.15 * float(paper.get("match_score") or 0)
+        + 0.10 * _source_confidence(paper)
+        + 0.05 * recency_weight(paper, current_year)
+    )
+
+
+def _recent_importance_score(paper: dict[str, Any], keywords: list[str], current_year: int) -> float:
+    return (
+        0.35 * recency_weight(paper, current_year)
+        + 0.25 * _topic_centrality(paper, keywords)
+        + 0.20 * author_role_weight(paper.get("author_role"))
+        + 0.15 * float(paper.get("match_score") or 0)
+        + 0.05 * _citation_signal(paper)
+    )
 
 
 def _citation_signal(paper: dict[str, Any]) -> float:

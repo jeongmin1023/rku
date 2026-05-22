@@ -5,19 +5,16 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        navy: {
-          950: "#071425",
-          900: "#0B1F35",
-          800: "#12304E",
-          700: "#17446F"
-        },
-        ivory: "#FBF7EE",
-        mist: "#EEF2F6",
-        line: "#D8E0E8",
-        bluepoint: "#2F7DD1"
+        gold: "#DCAE72",
+        purple: "#9F72DB",
+        green: "#72DB8C",
+        "warm-gray": "#867E73",
+        "dark-purple": "#50485C",
+        "dark-green": "#485C4D"
       },
       boxShadow: {
-        soft: "0 18px 50px rgba(11, 31, 53, 0.08)"
+        soft: "0 18px 50px rgb(30 36 32 / 24%)",
+        glow: "0 0 0 1px rgb(220 174 114 / 18%), 0 24px 80px rgb(30 36 32 / 32%)"
       }
     }
   },

@@ -6,6 +6,14 @@ from collections.abc import Generator
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
+try:
+    from dotenv import load_dotenv
+except ImportError:  # pragma: no cover - dependency is listed, fallback keeps local dev resilient.
+    def load_dotenv() -> bool:
+        return False
+
+
+load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./labfit.db")
 
@@ -53,10 +61,14 @@ def _ensure_sqlite_columns() -> None:
         for column, definition in {
             "detailed_trend_summary": "TEXT",
             "trend_confidence": "VARCHAR(20) DEFAULT 'low'",
+            "main_research_axis_json": "TEXT",
+            "recent_shift": "TEXT",
             "recent_important_papers_json": "TEXT",
             "interest_related_papers_json": "TEXT",
             "supporting_papers_json": "TEXT",
             "excluded_papers_count": "INTEGER DEFAULT 0",
+            "llm_used": "BOOLEAN DEFAULT 0",
+            "llm_provider": "VARCHAR(50)",
         }.items():
             if column not in existing:
                 connection.execute(text(f"ALTER TABLE analysis_results ADD COLUMN {column} {definition}"))

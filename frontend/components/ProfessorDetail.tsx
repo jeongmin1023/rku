@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, Loader2, Mail, MessageSquare, NotebookText, Search } from "lucide-react";
+import { CheckCircle2, Mail, MessageSquare, NotebookText, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { AnalysisTypeBadge, ConfidenceBadge } from "@/components/Badge";
@@ -52,14 +52,14 @@ export function ProfessorDetail({
   const weak = detail.papers.filter((paper) => paper.match_status === "weak_candidate");
 
   return (
-    <section className="rounded-md border border-line bg-white p-5 shadow-soft">
+    <section className="rounded-md border border-warm-gray/20 bg-dark-purple p-5 shadow-soft">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <p className="text-sm font-semibold text-bluepoint">
+          <p className="text-sm font-semibold text-purple">
             {detail.department_info.university} · {detail.department_info.department}
           </p>
-          <h2 className="mt-1 text-2xl font-semibold text-navy-900">{detail.name}</h2>
-          <p className="mt-2 text-sm text-slate-600">
+          <h2 className="mt-1 text-2xl font-semibold text-white">{detail.name}</h2>
+          <p className="mt-2 text-sm text-warm-gray">
             {detail.lab_name || "연구실명 확인 필요"} · {detail.email || "이메일 확인 필요"}
           </p>
         </div>
@@ -69,12 +69,12 @@ export function ProfessorDetail({
         </div>
       </div>
 
-      <div className="mt-6 flex flex-wrap gap-2 border-b border-line">
+      <div className="mt-6 flex flex-wrap gap-2 border-b border-warm-gray/20">
         {tabs.map((tab) => (
           <button
             key={tab.key}
             className={`focus-ring -mb-px rounded-t-md border border-b-0 px-4 py-2 text-sm font-semibold ${
-              activeTab === tab.key ? "border-line bg-ivory text-navy-900" : "border-transparent text-slate-600 hover:bg-mist"
+              activeTab === tab.key ? "border-warm-gray/20 bg-[#2E2838] text-white" : "border-transparent text-warm-gray hover:bg-dark-green"
             }`}
             onClick={() => setActiveTab(tab.key)}
             type="button"
@@ -114,7 +114,7 @@ function SummaryTab({
   return (
     <div className="space-y-6">
       <SectionTitle title="연구 경향성 요약" description={detail.analysis.trend_summary} />
-      {detail.analysis.detailed_trend_summary ? <p className="text-sm leading-7 text-slate-700">{detail.analysis.detailed_trend_summary}</p> : null}
+      {detail.analysis.detailed_trend_summary ? <p className="text-sm leading-7 text-[#F0EDE8]">{detail.analysis.detailed_trend_summary}</p> : null}
 
       <div className="grid gap-4 lg:grid-cols-3">
         <KeywordBlock title="전체 키워드" keywords={detail.analysis.overall_keywords} />
@@ -124,13 +124,13 @@ function SummaryTab({
 
       <div className="grid gap-5 lg:grid-cols-[1.3fr_.7fr]">
         <div>
-          <h3 className="text-base font-semibold text-navy-900">연구 흐름 타임라인</h3>
+          <h3 className="text-base font-semibold text-white">연구 흐름 타임라인</h3>
           {timelineEntries.length ? (
-            <ol className="mt-4 space-y-3 border-l border-line pl-4">
+            <ol className="mt-4 space-y-3 border-l border-warm-gray/20 pl-4">
               {timelineEntries.map(([year, keywords]) => (
                 <li key={year}>
-                  <p className="text-sm font-semibold text-navy-900">{year}</p>
-                  <p className="mt-1 text-sm text-slate-600">{keywords.join(", ")}</p>
+                  <p className="text-sm font-semibold text-white">{year}</p>
+                  <p className="mt-1 text-sm text-warm-gray">{keywords.join(", ")}</p>
                 </li>
               ))}
             </ol>
@@ -140,7 +140,7 @@ function SummaryTab({
         </div>
 
         <div>
-          <h3 className="text-base font-semibold text-navy-900">근거 상태</h3>
+          <h3 className="text-base font-semibold text-white">근거 상태</h3>
           <dl className="mt-4 space-y-3 text-sm">
             <Row label="accepted 논문" value={acceptedCount} />
             <Row label="검증 필요 논문" value={needsReviewCount} />
@@ -154,7 +154,7 @@ function SummaryTab({
       </div>
 
       {detail.analysis.warnings.length ? (
-        <div className="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
+        <div className="rounded-md border border-gold/30 bg-gold/10 p-4 text-sm leading-6 text-gold">
           {detail.analysis.warnings.map((warning) => (
             <p key={warning}>{warning}</p>
           ))}
@@ -195,8 +195,8 @@ function PaperSection({
   return (
     <div className="space-y-3">
       <div>
-        <h3 className="text-base font-semibold text-navy-900">{title}</h3>
-        <p className="mt-1 text-sm leading-6 text-slate-600">{description}</p>
+        <h3 className="text-base font-semibold text-white">{title}</h3>
+        <p className="mt-1 text-sm leading-6 text-warm-gray">{description}</p>
       </div>
       {papers.length ? (
         <div className="grid gap-4">
@@ -236,21 +236,21 @@ function FitTab({
         description="숫자 중심 판단이 아니라 공개 논문과 관심 주제 사이의 연결 근거, 그리고 컨택 전 확인할 질문을 함께 봅니다."
       />
       <div className="flex flex-col gap-3 md:flex-row">
-        <input className="focus-ring min-h-11 flex-1 rounded-md border border-line bg-white px-4 text-sm" value={interest} onChange={(event) => onInterestChange(event.target.value)} placeholder="예: LLM 기반 교육 서비스" />
-        <button className="focus-ring inline-flex items-center justify-center gap-2 rounded-md bg-navy-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-navy-800 disabled:cursor-not-allowed disabled:bg-slate-400" type="button" onClick={onAnalyze} disabled={loading || !interest.trim()}>
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-          연구핏 분석하기
+        <input className="focus-ring min-h-11 flex-1 rounded-md border border-warm-gray/20 bg-[#2E2838] px-4 text-sm text-white placeholder:text-warm-gray" value={interest} onChange={(event) => onInterestChange(event.target.value)} placeholder="예: LLM 기반 교육 서비스" />
+        <button className="focus-ring inline-flex items-center justify-center gap-2 rounded-md bg-gold px-4 py-2.5 text-sm font-bold text-[#1E2420] transition duration-150 hover:scale-[1.02] hover:bg-[#C89A5E] disabled:cursor-not-allowed disabled:opacity-60" type="button" onClick={onAnalyze} disabled={loading || !interest.trim()}>
+          <Search className="h-4 w-4" />
+          {loading ? "분석 중" : "연구핏 분석하기"}
         </button>
       </div>
 
       {fit ? (
         <div className="space-y-5">
-          <div className="rounded-md border border-line bg-ivory p-5">
+          <div className="rounded-md border border-warm-gray/20 bg-[#2E2838] p-5">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-full border border-bluepoint/25 bg-bluepoint/10 px-3 py-1 text-sm font-semibold text-navy-800">{fit.fit_level}</span>
+              <span className="rounded-full border border-gold/30 bg-gold/15 px-3 py-1 text-2xl font-bold text-gold">{fit.fit_level}</span>
               <ConfidenceBadge confidence={fit.evidence_confidence} />
             </div>
-            <p className="mt-4 text-sm leading-6 text-slate-700">{fit.interpretation}</p>
+            <p className="mt-4 text-sm leading-6 text-[#F0EDE8]">{fit.interpretation}</p>
           </div>
 
           <KeywordBlock title="맞닿은 키워드" keywords={fit.matched_keywords} />
@@ -284,26 +284,26 @@ function ContactTab({
     <div className="space-y-5">
       <SectionTitle title="컨택 준비 카드" description="이 카드는 컨택 전 준비를 돕기 위한 참고 자료입니다. 실제 모집 주제와 연구실 운영 방식은 교수님께 직접 확인해야 합니다." />
       <div className="flex flex-col gap-3 md:flex-row">
-        <input className="focus-ring min-h-11 flex-1 rounded-md border border-line bg-white px-4 text-sm" value={interest} onChange={(event) => onInterestChange(event.target.value)} placeholder="컨택에서 묻고 싶은 관심 주제" />
-        <button className="focus-ring inline-flex items-center justify-center gap-2 rounded-md bg-navy-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-navy-800 disabled:cursor-not-allowed disabled:bg-slate-400" type="button" onClick={onBuild} disabled={loading || !interest.trim()}>
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
-          카드 생성
+        <input className="focus-ring min-h-11 flex-1 rounded-md border border-warm-gray/20 bg-[#2E2838] px-4 text-sm text-white placeholder:text-warm-gray" value={interest} onChange={(event) => onInterestChange(event.target.value)} placeholder="컨택에서 묻고 싶은 관심 주제" />
+        <button className="focus-ring inline-flex items-center justify-center gap-2 rounded-md bg-gold px-4 py-2.5 text-sm font-bold text-[#1E2420] transition duration-150 hover:scale-[1.02] hover:bg-[#C89A5E] disabled:cursor-not-allowed disabled:opacity-60" type="button" onClick={onBuild} disabled={loading || !interest.trim()}>
+          <Mail className="h-4 w-4" />
+          {loading ? "생성 중" : "컨택 카드 보기"}
         </button>
       </div>
 
       {contact ? (
         <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
           <div>
-            <h3 className="flex items-center gap-2 text-base font-semibold text-navy-900">
-              <NotebookText className="h-4 w-4 text-bluepoint" />
+            <h3 className="flex items-center gap-2 text-base font-semibold text-white">
+              <NotebookText className="h-4 w-4 text-purple" />
               컨택 전 읽을 논문
             </h3>
             <div className="mt-3 space-y-3">
               {contact.reading_list.map((paper) => (
-                <div key={`${paper.category}-${paper.title}`} className="border-b border-line pb-3">
-                  <p className="text-xs font-semibold text-bluepoint">{paper.category}</p>
-                  <p className="mt-1 text-sm font-semibold text-navy-900">{paper.title || "자료 확인 필요"}</p>
-                  <p className="mt-1 text-sm leading-6 text-slate-600">{paper.why_read}</p>
+                <div key={`${paper.category}-${paper.title}`} className="border-b border-warm-gray/20 pb-3">
+                  <p className="text-xs font-semibold text-purple">{paper.category}</p>
+                  <p className="mt-1 text-sm font-semibold text-white">{paper.title || "자료 확인 필요"}</p>
+                  <p className="mt-1 text-sm leading-6 text-warm-gray">{paper.why_read}</p>
                 </div>
               ))}
             </div>
@@ -324,17 +324,17 @@ function ContactTab({
 function KeywordBlock({ title, keywords }: { title: string; keywords: string[] }) {
   return (
     <div>
-      <h3 className="text-sm font-semibold text-navy-900">{title}</h3>
+      <h3 className="text-sm font-semibold text-white">{title}</h3>
       {keywords.length ? (
         <div className="mt-3 flex flex-wrap gap-2">
           {keywords.map((keyword) => (
-            <span key={keyword} className="rounded-full bg-mist px-2.5 py-1 text-xs font-semibold text-slate-700">
+            <span key={keyword} className="rounded-full border border-purple/30 bg-purple/15 px-2.5 py-1 text-xs font-semibold text-purple">
               {keyword}
             </span>
           ))}
         </div>
       ) : (
-        <p className="mt-3 text-sm text-slate-500">키워드 확인 필요</p>
+        <p className="mt-3 text-sm text-warm-gray">키워드 확인 필요</p>
       )}
     </div>
   );
@@ -343,20 +343,20 @@ function KeywordBlock({ title, keywords }: { title: string; keywords: string[] }
 function CheckList({ title, icon, items }: { title: string; icon: React.ReactNode; items: string[] }) {
   return (
     <div>
-      <h3 className="flex items-center gap-2 text-base font-semibold text-navy-900">
+      <h3 className="flex items-center gap-2 text-base font-semibold text-white">
         {icon}
         {title}
       </h3>
       {items.length ? (
-        <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-700">
+        <ul className="mt-3 space-y-2 text-sm leading-6 text-[#F0EDE8]">
           {items.map((item) => (
-            <li key={item} className="border-b border-line pb-2 last:border-0">
+            <li key={item} className="border-b border-warm-gray/20 pb-2 last:border-0">
               {item}
             </li>
           ))}
         </ul>
       ) : (
-        <p className="mt-3 text-sm text-slate-500">확인할 항목이 없습니다.</p>
+        <p className="mt-3 text-sm text-warm-gray">확인할 항목이 없습니다.</p>
       )}
     </div>
   );
@@ -364,9 +364,9 @@ function CheckList({ title, icon, items }: { title: string; icon: React.ReactNod
 
 function Row({ label, value }: { label: string; value: number }) {
   return (
-    <div className="flex justify-between gap-4 border-b border-line pb-2">
-      <dt className="text-slate-600">{label}</dt>
-      <dd className="font-semibold text-navy-900">{value}</dd>
+    <div className="flex justify-between gap-4 border-b border-warm-gray/20 pb-2">
+      <dt className="text-warm-gray">{label}</dt>
+      <dd className="font-semibold text-white">{value}</dd>
     </div>
   );
 }

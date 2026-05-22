@@ -29,14 +29,14 @@ export function ComparePanel({
             const fit = fitByProfessor[detail.id];
             const recentPapers = detail.analysis.recent_important_papers?.length ? detail.analysis.recent_important_papers : detail.analysis.recent_papers;
             return (
-              <article key={detail.id} className="rounded-md border border-line bg-white p-5 shadow-soft">
+              <article key={detail.id} className="rounded-md border border-warm-gray/20 bg-dark-purple p-5 shadow-soft">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h3 className="text-lg font-semibold text-navy-900">{detail.name}</h3>
-                    <p className="mt-1 text-sm text-slate-600">{detail.lab_name || "연구실명 확인 필요"}</p>
+                    <h3 className="text-lg font-semibold text-white">{detail.name}</h3>
+                    <p className="mt-1 text-sm text-warm-gray">{detail.lab_name || "연구실명 확인 필요"}</p>
                   </div>
                   <button
-                    className="focus-ring inline-flex h-8 w-8 items-center justify-center rounded-md border border-line text-slate-600 hover:bg-mist"
+                    className="focus-ring inline-flex h-8 w-8 items-center justify-center rounded-md border border-warm-gray/20 text-warm-gray hover:bg-dark-green hover:text-white"
                     type="button"
                     onClick={() => onRemove(detail.id)}
                     title="비교에서 제거"
@@ -67,18 +67,18 @@ export function ComparePanel({
 
 function CompareBlock({ title, items }: { title: string; items: string[] }) {
   return (
-    <div className="mt-5 border-t border-line pt-4">
-      <h4 className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">{title}</h4>
+    <div className="mt-5 border-t border-warm-gray/20 pt-4">
+      <h4 className="text-xs font-semibold uppercase tracking-[0.08em] text-warm-gray">{title}</h4>
       {items.length ? (
         <div className="mt-2 flex flex-wrap gap-2">
           {items.slice(0, 5).map((item) => (
-            <span key={item} className="rounded-full bg-mist px-2.5 py-1 text-xs font-semibold text-slate-700">
+            <span key={item} className="rounded-full border border-purple/30 bg-purple/15 px-2.5 py-1 text-xs font-semibold text-purple">
               {item}
             </span>
           ))}
         </div>
       ) : (
-        <p className="mt-2 text-sm text-slate-500">확인 필요</p>
+        <p className="mt-2 text-sm text-warm-gray">확인 필요</p>
       )}
     </div>
   );
@@ -86,9 +86,9 @@ function CompareBlock({ title, items }: { title: string; items: string[] }) {
 
 function CompareText({ title, text }: { title: string; text: string }) {
   return (
-    <div className="mt-5 border-t border-line pt-4">
-      <h4 className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">{title}</h4>
-      <p className="mt-2 text-sm leading-6 text-slate-700">{text}</p>
+    <div className="mt-5 border-t border-warm-gray/20 pt-4">
+      <h4 className="text-xs font-semibold uppercase tracking-[0.08em] text-warm-gray">{title}</h4>
+      <p className="mt-2 text-sm leading-6 text-[#F0EDE8]">{text}</p>
     </div>
   );
 }

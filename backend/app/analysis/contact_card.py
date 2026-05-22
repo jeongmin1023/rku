@@ -45,6 +45,9 @@ def build_contact_card(
                 "title": "공개 논문 데이터 제한",
                 "year": None,
                 "why_read": "논문보다 연구실 소개, 교수소개 페이지, 프로젝트 정보를 먼저 확인하세요.",
+                "paper_summary": "공개 논문 데이터가 제한적이어서 연구실 소개와 교수소개 페이지를 우선 확인하는 것이 좋습니다.",
+                "why_read_this": "공식 연구분야와 현재 모집 주제를 직접 확인하기 위한 출발점입니다.",
+                "category_reason": "공개 논문 근거가 충분하지 않은 경우의 대체 확인 항목입니다.",
                 "category": "확인 필요",
             }
         )
@@ -79,7 +82,10 @@ def _reading_items(items: list[dict[str, Any]], category: str, why: str) -> list
             "title": item.get("title"),
             "year": item.get("year"),
             "venue": item.get("venue"),
+            "paper_summary": item.get("paper_summary"),
             "why_read": item.get("why_read_this") or why,
+            "why_read_this": item.get("why_read_this") or why,
+            "category_reason": item.get("category_reason"),
             "category": category,
         }
         for item in items
