@@ -1,6 +1,6 @@
-import { BookOpen, ChevronRight, GitCompare, SearchCheck } from "lucide-react";
+import { ChevronRight, GitCompare } from "lucide-react";
 
-import { AnalysisTypeBadge, ConfidenceBadge } from "@/components/Badge";
+import { AnalysisTypeBadge, Badge, ConfidenceBadge } from "@/components/Badge";
 import { EmptyState, SectionTitle } from "@/components/StateBlocks";
 import type { ProfessorCard } from "@/lib/types";
 
@@ -43,8 +43,8 @@ export function ProfessorCards({
       const haystack = [...card.keywords, card.trend_summary ?? "", card.official_keywords ?? ""].join(" ").toLowerCase();
       return interestTokens.some((token) => haystack.includes(token));
     }
-    if (filter === "recent") return (card.trend_summary ?? "").includes("최근") || (card.accepted_count ?? 0) > 0;
-    if (filter === "sufficient") return (card.accepted_count ?? 0) >= 3 || card.evidence_confidence === "high";
+    if (filter === "recent") return (card.recent_keywords?.length ?? 0) > 0 || (card.accepted_paper_count ?? card.accepted_count ?? 0) > 0;
+    if (filter === "sufficient") return (card.accepted_paper_count ?? card.accepted_count ?? 0) >= 3 || card.evidence_confidence === "high";
     if (filter === "limited") return card.analysis_type === "data_limited" || card.evidence_confidence === "low";
     if (filter === "emerging") return card.analysis_type === "emerging_lab";
     return true;
@@ -81,6 +81,8 @@ export function ProfessorCards({
           {filtered.map((card) => {
             const selected = compareIds.includes(card.id);
             const compareDisabled = !selected && compareIds.length >= 3;
+            const accepted = card.accepted_paper_count ?? card.accepted_count ?? 0;
+            const needsReview = card.needs_review_paper_count ?? card.needs_review_count ?? 0;
             return (
               <article key={card.id} className="flex min-h-full flex-col rounded-md border border-line bg-white p-5 shadow-soft">
                 <div className="flex items-start justify-between gap-3">
@@ -114,24 +116,29 @@ export function ProfessorCards({
                   ))}
                 </div>
 
-                <p className="mt-4 flex-1 text-sm leading-6 text-slate-700">{card.trend_summary || "논문 수집 후 최근 연구 경향을 확인할 수 있습니다."}</p>
+                <p className="mt-4 text-sm leading-6 text-slate-700">
+                  <span className="font-semibold text-navy-900">연구 경향: </span>
+                  {card.trend_summary || "공개 논문 데이터가 충분하지 않습니다. 연구실 소개와 교수소개 페이지를 중심으로 확인하세요."}
+                </p>
 
-                <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-2 border-t border-line pt-4 text-sm">
-                  <div>
-                    <dt className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
-                      <BookOpen className="h-3.5 w-3.5" aria-hidden />
-                      accepted 논문
-                    </dt>
-                    <dd className="mt-1 font-semibold text-navy-900">{card.accepted_count ?? 0}</dd>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {Object.entries(card.source_coverage ?? {}).map(([source, count]) => (
+                    <Badge key={source} tone="slate">
+                      {source} {count}
+                    </Badge>
+                  ))}
+                </div>
+
+                <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                  <div className="rounded-md bg-mist p-3">
+                    <p className="text-xs text-slate-500">분석 사용 가능</p>
+                    <p className="mt-1 text-lg font-bold text-navy-900">{accepted}</p>
                   </div>
-                  <div>
-                    <dt className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
-                      <SearchCheck className="h-3.5 w-3.5" aria-hidden />
-                      검증 필요
-                    </dt>
-                    <dd className="mt-1 font-semibold text-navy-900">{card.needs_review_count ?? 0}</dd>
+                  <div className="rounded-md bg-mist p-3">
+                    <p className="text-xs text-slate-500">검증 필요</p>
+                    <p className="mt-1 text-lg font-bold text-navy-900">{needsReview}</p>
                   </div>
-                </dl>
+                </div>
 
                 <button
                   className="focus-ring mt-5 inline-flex items-center justify-center gap-2 rounded-md bg-navy-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-navy-800"

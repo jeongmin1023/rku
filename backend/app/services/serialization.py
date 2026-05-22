@@ -57,12 +57,18 @@ def analysis_to_dict(analysis: AnalysisResult | None) -> dict[str, Any]:
         return empty_analysis()
     return {
         "trend_summary": analysis.trend_summary,
+        "detailed_trend_summary": analysis.detailed_trend_summary,
         "recent_keywords": loads_json(analysis.recent_keywords, []),
         "five_year_keywords": loads_json(analysis.five_year_keywords, []),
         "overall_keywords": loads_json(analysis.overall_keywords, []),
         "timeline": loads_json(analysis.timeline_json, {}),
+        "trend_confidence": analysis.trend_confidence,
         "representative_papers": loads_json(analysis.representative_papers_json, []),
+        "recent_important_papers": loads_json(analysis.recent_important_papers_json, []),
         "recent_papers": loads_json(analysis.recent_papers_json, []),
+        "interest_related_papers": loads_json(analysis.interest_related_papers_json, []),
+        "supporting_papers": loads_json(analysis.supporting_papers_json, []),
+        "excluded_papers_count": analysis.excluded_papers_count,
         "evidence_confidence": analysis.evidence_confidence,
         "warnings": loads_json(analysis.warnings_json, []),
     }
@@ -70,13 +76,19 @@ def analysis_to_dict(analysis: AnalysisResult | None) -> dict[str, Any]:
 
 def empty_analysis() -> dict[str, Any]:
     return {
-        "trend_summary": "논문 수집 전입니다. 공개 논문과 연구실 정보를 수집한 뒤 연구 경향을 확인할 수 있습니다.",
+        "trend_summary": "논문 수집 전입니다. 공개 논문과 연구실 정보를 수집하면 연구 경향을 확인할 수 있습니다.",
+        "detailed_trend_summary": None,
         "recent_keywords": [],
         "five_year_keywords": [],
         "overall_keywords": [],
         "timeline": {},
+        "trend_confidence": "low",
         "representative_papers": [],
+        "recent_important_papers": [],
         "recent_papers": [],
+        "interest_related_papers": [],
+        "supporting_papers": [],
+        "excluded_papers_count": 0,
         "evidence_confidence": "low",
         "warnings": ["논문 수집 전"],
     }

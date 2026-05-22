@@ -17,12 +17,18 @@ def run_and_store_analysis(db: Session, professor: Professor) -> dict:
 
     payload = {
         "trend_summary": result["trend_summary"],
+        "detailed_trend_summary": result.get("detailed_trend_summary"),
         "recent_keywords": json.dumps(result["recent_keywords"], ensure_ascii=False),
         "five_year_keywords": json.dumps(result["five_year_keywords"], ensure_ascii=False),
         "overall_keywords": json.dumps(result["overall_keywords"], ensure_ascii=False),
         "timeline_json": json.dumps(result["timeline"], ensure_ascii=False),
+        "trend_confidence": result.get("trend_confidence", result["evidence_confidence"]),
         "representative_papers_json": json.dumps(result["representative_papers"], ensure_ascii=False),
+        "recent_important_papers_json": json.dumps(result.get("recent_important_papers", []), ensure_ascii=False),
         "recent_papers_json": json.dumps(result["recent_papers"], ensure_ascii=False),
+        "interest_related_papers_json": json.dumps(result.get("interest_related_papers", []), ensure_ascii=False),
+        "supporting_papers_json": json.dumps(result.get("supporting_papers", []), ensure_ascii=False),
+        "excluded_papers_count": result.get("excluded_papers_count", 0),
         "evidence_confidence": result["evidence_confidence"],
         "warnings_json": json.dumps(result["warnings"], ensure_ascii=False),
     }

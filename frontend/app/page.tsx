@@ -343,7 +343,7 @@ function OnboardingPanel() {
       />
       <div className="grid gap-4 md:grid-cols-3">
         <InfoBlock title="후보 추출" text="이름, 이메일, 연구분야, 상세 링크 주변 텍스트를 바탕으로 교수님 후보를 찾습니다." />
-        <InfoBlock title="논문 병합" text="KCI, OpenAlex, Crossref 후보를 표준화한 뒤 DOI/UCI/제목/저자/연도 기준으로 MasterPaper를 만듭니다." />
+        <InfoBlock title="논문 병합" text="KCI, RISS, DBpia, ScienceON, Crossref 후보를 표준화한 뒤 DOI/UCI/제목/저자/연도 기준으로 MasterPaper를 만듭니다." />
         <InfoBlock title="근거 중심 해석" text="accepted와 검증 필요 논문을 분리하고, 공개 데이터가 부족하면 Emerging Lab으로 표시합니다." />
       </div>
     </section>
@@ -360,20 +360,57 @@ function InfoBlock({ title, text }: { title: string; text: string }) {
 }
 
 function enrichCardWithHarvest(card: ProfessorCard, results: HarvestProfessorResult[]): ProfessorCard {
-  const result = results.find((item) => item.professor.id === card.id || item.professor.name === card.name);
+  const result = results.find(
+    (item) => item.professor.id === card.id || item.professor.name === card.name
+  );
+
   if (!result) return card;
+
+  const analysisReadyCount =
+    result.analysis_ready_count ?? result.accepted_count + result.needs_review_count;
+
+  const reviewCandidateCount =
+    result.review_candidate_count ?? result.needs_review_count + result.weak_candidate_count;
+
+  const candidatePoolCount =
+    result.candidate_pool_count ??
+    result.accepted_count + result.needs_review_count + result.weak_candidate_count;
+
+  const excludedCount = result.excluded_count ?? result.rejected_count;
+
   return {
     ...card,
+
     accepted_count: result.accepted_count,
     needs_review_count: result.needs_review_count,
+    weak_candidate_count: result.weak_candidate_count,
     rejected_count: result.rejected_count,
+    accepted_paper_count: result.accepted_count,
+    needs_review_paper_count: result.needs_review_count,
+    rejected_paper_count: result.rejected_count,
+
     source_candidate_count: result.source_candidate_count,
     master_paper_count: result.master_paper_count,
+
+    analysis_ready_count: analysisReadyCount,
+    review_candidate_count: reviewCandidateCount,
+    candidate_pool_count: candidatePoolCount,
+    excluded_count: excludedCount,
+    warning_count: result.warning_count ?? 0,
+
+    usable_rate: result.usable_rate ?? 0,
+    candidate_pool_rate: result.candidate_pool_rate ?? 0,
+    excluded_rate: result.excluded_rate ?? 0,
+
     keywords: result.analysis.five_year_keywords.slice(0, 5),
     trend_summary: result.analysis.trend_summary,
+    recent_keywords: result.analysis.recent_keywords,
+    five_year_keywords: result.analysis.five_year_keywords,
+    overall_keywords: result.analysis.overall_keywords,
+    trend_confidence: result.analysis.trend_confidence,
     warnings: result.analysis.warnings,
     evidence_confidence: result.analysis.evidence_confidence,
-    analysis_type: result.professor.analysis_type || card.analysis_type
+    analysis_type: result.professor.analysis_type || card.analysis_type,
   };
 }
 

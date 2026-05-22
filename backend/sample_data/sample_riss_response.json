@@ -1,0 +1,56 @@
+{
+  "papers": [
+    {
+      "professor_names": ["김민준", "Minjun Kim"],
+      "source_id": "RISS-KIM-2025-001",
+      "title_ko": "LLM 기반 맞춤형 학습 피드백 서비스 연구",
+      "title_en": "Large Language Model Assisted Feedback for Personalized Learning Services",
+      "authors": ["김민준", "Minjun Kim", "최아리"],
+      "author_affiliations": [],
+      "year": 2025,
+      "venue": "교육AI연구",
+      "doi": "10.5555/labfit.2025.001",
+      "uci": "G704-SAMPLE.2025.001",
+      "abstract": null,
+      "keywords": ["LLM", "교육 AI", "학습자 피드백"],
+      "citation_count": null,
+      "citation_source": "riss",
+      "url": "https://riss.example/papers/RISS-KIM-2025-001",
+      "name_only_match": true
+    },
+    {
+      "professor_names": ["김민준", "Minjun Kim"],
+      "source_id": "RISS-KIM-2016-003",
+      "title_ko": "디지털 도서관 추천을 위한 협업 필터링 모델",
+      "title_en": "Collaborative Filtering for Digital Library Recommendation",
+      "authors": ["김민준", "Minjun Kim"],
+      "author_affiliations": ["샘플대학교 컴퓨터공학과"],
+      "year": 2016,
+      "venue": "정보시스템연구",
+      "doi": "10.5555/labfit.2016.003",
+      "uci": "G704-SAMPLE.2016.003",
+      "abstract": "디지털 도서관에서 사용자 모델링과 협업 필터링을 이용한 추천시스템을 제안한다.",
+      "keywords": ["추천시스템", "협업 필터링", "정보검색"],
+      "citation_count": null,
+      "citation_source": "riss",
+      "url": "https://riss.example/papers/RISS-KIM-2016-003"
+    },
+    {
+      "professor_names": ["이서연", "Seoyeon Lee"],
+      "source_id": "RISS-LEE-OTHER-001",
+      "title_ko": "반도체 공정 최적화를 위한 플라즈마 시뮬레이션",
+      "title_en": "Plasma Simulation for Semiconductor Process Optimization",
+      "authors": ["이서연", "Seoyeon Lee", "Michael Brown"],
+      "author_affiliations": ["다른대학교 전자공학과"],
+      "year": 2022,
+      "venue": "반도체공학연구",
+      "doi": "10.5555/other.2022.404",
+      "uci": "G704-OTHER.2022.404",
+      "abstract": "반도체 공정의 플라즈마 시뮬레이션과 수율 최적화를 다룬다.",
+      "keywords": ["반도체", "플라즈마", "공정 최적화"],
+      "citation_count": null,
+      "citation_source": "riss",
+      "url": "https://riss.example/papers/RISS-LEE-OTHER-001"
+    }
+  ]
+}

@@ -11,13 +11,7 @@ const toneClass: Record<BadgeTone, string> = {
   navy: "border-navy-800/20 bg-navy-900 text-white"
 };
 
-export function Badge({
-  children,
-  tone = "slate"
-}: {
-  children: React.ReactNode;
-  tone?: BadgeTone;
-}) {
+export function Badge({ children, tone = "slate" }: { children: React.ReactNode; tone?: BadgeTone }) {
   return (
     <span className={`inline-flex items-center whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-semibold ${toneClass[tone]}`}>
       {children}
@@ -26,15 +20,15 @@ export function Badge({
 }
 
 export function MatchBadge({ status }: { status?: MatchStatus | string }) {
-  if (status === "accepted") return <Badge tone="green">accepted</Badge>;
+  if (status === "accepted") return <Badge tone="green">분석 사용 가능</Badge>;
   if (status === "needs_review") return <Badge tone="amber">검증 필요</Badge>;
-  if (status === "rejected") return <Badge tone="rose">rejected</Badge>;
-  if (status === "weak_candidate") return <Badge tone="slate">약한 후보</Badge>;
+  if (status === "weak_candidate") return <Badge tone="slate">낮은 신뢰도 후보</Badge>;
+  if (status === "rejected") return <Badge tone="rose">분석 제외</Badge>;
   return <Badge>확인 전</Badge>;
 }
 
 export function AnalysisTypeBadge({ type }: { type?: AnalysisType }) {
-  if (type === "paper_based") return <Badge tone="blue">논문 기반</Badge>;
+  if (type === "domestic_db_based" || type === "paper_based") return <Badge tone="blue">국내 학술 DB 기반</Badge>;
   if (type === "emerging_lab") return <Badge tone="amber">Emerging Lab</Badge>;
   if (type === "data_limited") return <Badge tone="slate">공개 데이터 제한</Badge>;
   return <Badge tone="slate">분석 준비 중</Badge>;
@@ -48,21 +42,21 @@ export function ConfidenceBadge({ confidence }: { confidence?: Confidence | stri
 
 export function SourceBadge({ source }: { source: string }) {
   const normalized = source.toLowerCase();
-  const label =
-    normalized === "kci"
-      ? "KCI"
-      : normalized === "openalex"
-        ? "OpenAlex"
-        : normalized === "crossref"
-          ? "Crossref"
-          : normalized === "dblp"
-            ? "DBLP"
-            : normalized === "riss"
-              ? "RISS"
-              : normalized === "scienceon"
-                ? "ScienceON"
-                : normalized === "dbpia"
-                  ? "DBpia"
-                  : source;
-  return <Badge tone={normalized === "openalex" ? "blue" : normalized === "kci" ? "green" : "slate"}>{label}</Badge>;
+  const labels: Record<string, string> = {
+    kci: "KCI",
+    riss: "RISS",
+    dbpia: "DBpia",
+    scienceon: "ScienceON",
+    crossref: "Crossref",
+    dblp: "DBLP",
+    professor_lab_page_publication: "공식페이지",
+    openalex: "OpenAlex"
+  };
+  const tone: BadgeTone =
+    normalized === "kci" || normalized === "professor_lab_page_publication"
+      ? "green"
+      : normalized === "crossref"
+        ? "blue"
+        : "slate";
+  return <Badge tone={tone}>{labels[normalized] ?? source}</Badge>;
 }

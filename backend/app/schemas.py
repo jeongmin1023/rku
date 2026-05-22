@@ -118,12 +118,18 @@ class ProfessorPaperOut(BaseModel):
 
 class AnalysisOut(BaseModel):
     trend_summary: str
+    detailed_trend_summary: str | None = None
     recent_keywords: list[str]
     five_year_keywords: list[str]
     overall_keywords: list[str]
     timeline: dict[str, list[str]]
+    trend_confidence: str = "low"
     representative_papers: list[dict[str, Any]]
+    recent_important_papers: list[dict[str, Any]] = Field(default_factory=list)
     recent_papers: list[dict[str, Any]]
+    interest_related_papers: list[dict[str, Any]] = Field(default_factory=list)
+    supporting_papers: list[dict[str, Any]] = Field(default_factory=list)
+    excluded_papers_count: int = 0
     evidence_confidence: str
     warnings: list[str]
 
@@ -131,9 +137,14 @@ class AnalysisOut(BaseModel):
 class ProfessorCardOut(ProfessorOut):
     keywords: list[str] = Field(default_factory=list)
     trend_summary: str | None = None
+    recent_keywords: list[str] = Field(default_factory=list)
+    five_year_keywords: list[str] = Field(default_factory=list)
+    overall_keywords: list[str] = Field(default_factory=list)
+    trend_confidence: str = "low"
     warnings: list[str] = Field(default_factory=list)
     accepted_paper_count: int = 0
     needs_review_paper_count: int = 0
+    weak_candidate_count: int = 0
     rejected_paper_count: int = 0
     source_coverage: dict[str, int] = Field(default_factory=dict)
 
@@ -148,10 +159,22 @@ class HarvestProfessorResponse(BaseModel):
     professor: ProfessorOut
     source_candidate_count: int
     master_paper_count: int
+
     accepted_count: int
     needs_review_count: int
     weak_candidate_count: int
     rejected_count: int
+
+    analysis_ready_count: int = 0
+    review_candidate_count: int = 0
+    candidate_pool_count: int = 0
+    excluded_count: int = 0
+    warning_count: int = 0
+
+    usable_rate: float = 0.0
+    candidate_pool_rate: float = 0.0
+    excluded_rate: float = 0.0
+
     analysis: AnalysisOut
 
 

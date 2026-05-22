@@ -13,11 +13,13 @@ from app.crawler.professor_page_crawler import extract_lab_publication_titles
 from app.models import Department, MasterPaper, Professor, ProfessorPaper
 from app.paper_sources.base import PaperSourceAdapter
 from app.paper_sources.crossref_client import CrossrefClient
+from app.paper_sources.dbpia_client import DBpiaClient
 from app.paper_sources.kci_client import KCIClient
 from app.paper_sources.mock_client import MockClient
-from app.paper_sources.openalex_client import OpenAlexClient
+from app.paper_sources.riss_client import RISSClient
+from app.paper_sources.scienceon_client import ScienceONClient
 from app.papers.matcher import ACCEPTED, NEEDS_REVIEW, REJECTED, WEAK_CANDIDATE, score_master_paper_match
-from app.papers.normalizer import NormalizedPaperCandidate, normalize_title
+from app.papers.normalizer import NormalizedPaperCandidate, normalize_lab_publication_item, normalize_title
 from app.papers.resolver import MasterPaperDraft, PaperResolver
 from app.services.analysis_service import run_and_store_analysis
 from app.services.serialization import loads_json, master_paper_to_dict
@@ -26,7 +28,7 @@ from app.services.serialization import loads_json, master_paper_to_dict
 def default_adapters() -> list[PaperSourceAdapter]:
     if os.getenv("LABFIT_USE_MOCK_ONLY", "").lower() in {"1", "true", "yes"}:
         return [MockClient()]
-    return [KCIClient(), OpenAlexClient(), CrossrefClient()]
+    return [KCIClient(), RISSClient(), DBpiaClient(), ScienceONClient(), CrossrefClient()]
 
 
 def harvest_department(db: Session, department: Department) -> list[dict]:
@@ -39,15 +41,14 @@ def harvest_professor(
     adapters: Iterable[PaperSourceAdapter] | None = None,
 ) -> dict:
     adapters = list(adapters or default_adapters())
-    candidates: list[NormalizedPaperCandidate] = []
-    for adapter in adapters:
-        candidates.extend(adapter.search_papers_for_professor(professor))
+    candidates = _collect_candidates(professor, adapters)
 
     resolver = PaperResolver()
     drafts = resolver.resolve(candidates)
     repeated_coauthors = _repeated_coauthors(drafts, professor)
     lab_titles = _lab_publication_titles(professor)
 
+    current_links: list[ProfessorPaper] = []
     for draft in drafts:
         master = _upsert_master_paper(db, draft)
         paper_dict = master_paper_to_dict(master)
@@ -64,21 +65,73 @@ def harvest_professor(
         link.evidence_notes_json = result.evidence_notes_json
         link.warnings_json = result.warnings_json
         db.add(link)
+        current_links.append(link)
 
+    _preserve_name_matched_candidates(current_links)
     db.commit()
     db.refresh(professor)
     analysis = run_and_store_analysis(db, professor)
-    counts = Counter(link.match_status for link in professor.paper_links)
+    counts = Counter(link.match_status for link in current_links)
+
+    accepted_count = counts[ACCEPTED]
+    needs_review_count = counts[NEEDS_REVIEW]
+    weak_candidate_count = counts[WEAK_CANDIDATE]
+    rejected_count = counts[REJECTED]
+    analysis_ready_count = accepted_count + needs_review_count
+    review_candidate_count = needs_review_count + weak_candidate_count
+    candidate_pool_count = accepted_count + needs_review_count + weak_candidate_count
+    excluded_count = rejected_count
+    warning_count = sum(len(loads_json(link.warnings_json, [])) for link in current_links)
+    master_count = len(drafts)
+
     return {
         "professor": professor,
         "source_candidate_count": len(candidates),
-        "master_paper_count": len(drafts),
-        "accepted_count": counts[ACCEPTED],
-        "needs_review_count": counts[NEEDS_REVIEW],
-        "weak_candidate_count": counts[WEAK_CANDIDATE],
-        "rejected_count": counts[REJECTED],
+        "master_paper_count": master_count,
+        "accepted_count": accepted_count,
+        "needs_review_count": needs_review_count,
+        "weak_candidate_count": weak_candidate_count,
+        "rejected_count": rejected_count,
+        "analysis_ready_count": analysis_ready_count,
+        "review_candidate_count": review_candidate_count,
+        "candidate_pool_count": candidate_pool_count,
+        "excluded_count": excluded_count,
+        "warning_count": warning_count,
+        "usable_rate": _percent(analysis_ready_count, master_count),
+        "candidate_pool_rate": _percent(candidate_pool_count, master_count),
+        "excluded_rate": _percent(excluded_count, master_count),
         "analysis": analysis,
     }
+
+
+def _collect_candidates(professor: Professor, adapters: list[PaperSourceAdapter]) -> list[NormalizedPaperCandidate]:
+    candidates: list[NormalizedPaperCandidate] = []
+    lab_titles = _lab_publication_titles(professor)
+    for title in lab_titles:
+        candidates.append(
+            normalize_lab_publication_item(
+                {
+                    "title": title,
+                    "authors": [professor.name],
+                    "year": _extract_year(title),
+                    "source_confidence": 1.0,
+                    "source_warnings": ["교수 공식 페이지 또는 연구실 페이지 publication 섹션에서 발견된 제목입니다."],
+                }
+            )
+        )
+
+    crossref_adapters = [adapter for adapter in adapters if adapter.source_name == "crossref"]
+    primary_adapters = [adapter for adapter in adapters if adapter.source_name != "crossref"]
+
+    for adapter in primary_adapters:
+        candidates.extend(adapter.search_by_professor(professor))
+
+    title_pool = list(dict.fromkeys([candidate.title_ko or candidate.title_en or candidate.normalized_title for candidate in candidates]))
+    for adapter in crossref_adapters:
+        for title in title_pool[:12]:
+            candidates.extend(adapter.search_by_title(title))
+
+    return candidates
 
 
 def _upsert_master_paper(db: Session, draft: MasterPaperDraft) -> MasterPaper:
@@ -105,7 +158,7 @@ def _upsert_master_paper(db: Session, draft: MasterPaperDraft) -> MasterPaper:
 
     master.title_ko = master.title_ko or draft.title_ko
     master.title_en = master.title_en or draft.title_en
-    master.display_title = master.title_en or master.title_ko or master.display_title
+    master.display_title = master.title_ko or master.title_en or master.display_title
     master.year = master.year or draft.year
     master.venue = master.venue or draft.venue
     master.doi = master.doi or draft.doi
@@ -163,6 +216,17 @@ def _upsert_professor_paper(db: Session, professor_id: int, master_paper_id: int
     return link
 
 
+def _preserve_name_matched_candidates(links: list[ProfessorPaper]) -> None:
+    if not links or any(link.match_status != REJECTED for link in links):
+        return
+    for link in sorted(links, key=lambda item: item.match_score, reverse=True)[:5]:
+        link.match_status = WEAK_CANDIDATE
+        link.match_score = max(link.match_score, 0.25)
+        warnings = loads_json(link.warnings_json, [])
+        warnings.append("이름 중심 검색 후보를 검증용으로 보존했습니다. 분석에는 낮은 가중치로만 사용하세요.")
+        link.warnings_json = json.dumps(list(dict.fromkeys(warnings)), ensure_ascii=False)
+
+
 def _repeated_coauthors(drafts: list[MasterPaperDraft], professor: Professor) -> Counter[str]:
     professor_names = {_norm(professor.name)}
     if professor.english_name:
@@ -206,6 +270,19 @@ def _longer(left: str | None, right: str | None) -> str | None:
     if not right:
         return left
     return right if len(right) > len(left) else left
+
+
+def _extract_year(title: str) -> int | None:
+    import re
+
+    match = re.search(r"\b(19|20)\d{2}\b", title)
+    return int(match.group(0)) if match else None
+
+
+def _percent(value: int, total: int) -> float:
+    if not total:
+        return 0.0
+    return round((value / total) * 100, 1)
 
 
 def _norm(value: str) -> str:

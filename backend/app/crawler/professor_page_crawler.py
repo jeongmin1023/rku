@@ -9,15 +9,22 @@ from bs4 import BeautifulSoup
 from app.crawler.department_crawler import USER_AGENT
 
 
-PUBLICATION_HINTS = ("publication", "publications", "논문", "연구실적", "papers")
+PUBLICATION_HINTS = (
+    "publication",
+    "publications",
+    "selected publications",
+    "research publications",
+    "논문",
+    "논문실적",
+    "연구실적",
+    "주요논문",
+    "연구성과",
+    "papers",
+)
 
 
 def extract_lab_publication_titles(url: str | None, timeout: int = 10) -> list[str]:
-    """Best-effort lab/profile publication title extraction.
-
-    This is intentionally conservative. Results are only used as supporting
-    evidence, never as the sole reason to accept a paper.
-    """
+    """Best-effort lab/profile publication title extraction."""
 
     if not url:
         return []
@@ -25,11 +32,12 @@ def extract_lab_publication_titles(url: str | None, timeout: int = 10) -> list[s
         time.sleep(0.3)
         response = requests.get(url, timeout=timeout, headers={"User-Agent": USER_AGENT})
         response.raise_for_status()
+        response.encoding = response.apparent_encoding or response.encoding
     except requests.RequestException:
         return []
 
     soup = BeautifulSoup(response.text, "html.parser")
-    for noisy in soup(["script", "style", "noscript"]):
+    for noisy in soup(["script", "style", "noscript", "nav", "header", "footer", "aside"]):
         noisy.decompose()
 
     candidates: list[str] = []

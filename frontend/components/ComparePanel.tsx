@@ -27,6 +27,7 @@ export function ComparePanel({
         <div className="grid gap-4 lg:grid-cols-3">
           {details.map((detail) => {
             const fit = fitByProfessor[detail.id];
+            const recentPapers = detail.analysis.recent_important_papers?.length ? detail.analysis.recent_important_papers : detail.analysis.recent_papers;
             return (
               <article key={detail.id} className="rounded-md border border-line bg-white p-5 shadow-soft">
                 <div className="flex items-start justify-between gap-3">
@@ -51,18 +52,9 @@ export function ComparePanel({
 
                 <CompareBlock title="연구 키워드" items={detail.analysis.five_year_keywords.slice(0, 5)} />
                 <CompareText title="최근 연구 방향" text={detail.analysis.trend_summary} />
-                <CompareText
-                  title="대표 논문"
-                  text={detail.analysis.representative_papers[0]?.title || "공개 논문 데이터가 충분하지 않습니다."}
-                />
-                <CompareText
-                  title="최근 논문"
-                  text={detail.analysis.recent_papers[0]?.title || "최근 논문 확인 필요"}
-                />
-                <CompareText
-                  title="내 관심 주제와 맞는 부분"
-                  text={fit?.interpretation || "관심 주제 분석 후 연결 근거가 표시됩니다."}
-                />
+                <CompareText title="대표 논문" text={detail.analysis.representative_papers[0]?.title || "공개 논문 데이터가 충분하지 않습니다."} />
+                <CompareText title="최근 연구 논문" text={recentPapers[0]?.title || "최근 논문 확인 필요"} />
+                <CompareText title="내 관심 주제와 맞는 부분" text={fit?.interpretation || "관심 주제 분석 후 연결 근거가 표시됩니다."} />
                 <CompareBlock title="확인 필요한 부분" items={fit?.check_points ?? detail.analysis.warnings} />
               </article>
             );

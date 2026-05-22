@@ -15,23 +15,21 @@ export function PaperCard({ paper, reason, compact = false }: PaperCardProps) {
   const title = isLinkedPaper ? paper.master_paper.display_title : (paper.title ?? "제목 확인 필요");
   const venue = isLinkedPaper ? paper.master_paper.venue : paper.venue;
   const year = isLinkedPaper ? paper.master_paper.year : paper.year;
-  const sourceList = master?.source_list ?? [];
+  const sourceList = isLinkedPaper ? paper.master_paper.source_list : (paper.source_list ?? []);
   const citationSignals = isLinkedPaper ? paper.master_paper.citation_signals : (paper.citation_signals ?? {});
   const status = paper.match_status;
-  const authorRole = isLinkedPaper ? paper.author_role : undefined;
+  const authorRole = isLinkedPaper ? paper.author_role : paper.author_role;
   const doi = master?.doi;
   const uci = master?.uci;
   const url = master?.url;
-  const description = reason ?? (isLinkedPaper ? undefined : paper.reason);
+  const description = reason ?? (isLinkedPaper ? undefined : paper.why_read_this ?? paper.category_reason ?? paper.reason);
 
   return (
     <article className="rounded-md border border-line bg-white p-4 shadow-soft">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <h4 className="text-base font-semibold leading-6 text-navy-900">{title}</h4>
-          <p className="mt-1 text-sm text-slate-600">
-            {[year, venue].filter(Boolean).join(" · ") || "학술지/연도 확인 필요"}
-          </p>
+          <p className="mt-1 text-sm text-slate-600">{[year, venue].filter(Boolean).join(" · ") || "학술지/연도 확인 필요"}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           {status ? <MatchBadge status={status} /> : null}
@@ -59,7 +57,7 @@ export function PaperCard({ paper, reason, compact = false }: PaperCardProps) {
             <dd className="mt-1 text-slate-700">
               {Object.entries(citationSignals).length
                 ? Object.entries(citationSignals)
-                    .map(([source, value]) => `${source.toUpperCase()} 인용 신호 ${value ?? "확인 전"}`)
+                    .map(([source, value]) => `${source.toUpperCase()} ${value ?? "확인 전"}`)
                     .join(" / ")
                 : "인용 신호 없음"}
             </dd>
@@ -75,7 +73,7 @@ export function PaperCard({ paper, reason, compact = false }: PaperCardProps) {
 
       {url ? (
         <a className="focus-ring mt-4 inline-flex items-center gap-2 rounded-md text-sm font-semibold text-bluepoint hover:text-navy-800" href={url} target="_blank" rel="noreferrer">
-          원문/식별자 링크
+          원문/메타데이터 링크
           <ExternalLink className="h-4 w-4" aria-hidden />
         </a>
       ) : null}

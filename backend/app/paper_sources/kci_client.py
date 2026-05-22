@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import os
 import time
+from typing import Any
 
 import requests
 
 from app.models import Professor
-from app.paper_sources.base import PaperSourceAdapter, load_sample_json, professor_matches_item
+from app.paper_sources.base import PaperSourceAdapter, load_sample_json, professor_matches_item, title_matches_item
 from app.papers.normalizer import NormalizedPaperCandidate, normalize_kci_item
 
 
@@ -17,27 +18,29 @@ class KCIClient(PaperSourceAdapter):
         self.api_key = api_key or os.getenv("KCI_API_KEY")
         self.timeout = timeout
 
-    def search_papers_for_professor(self, professor: Professor) -> list[NormalizedPaperCandidate]:
-        if not self.api_key:
-            return self._sample(professor)
+    def search_by_professor(self, professor: Professor) -> list[NormalizedPaperCandidate]:
+        if not self.api_key or not os.getenv("KCI_API_URL"):
+            return self._sample_by_professor(professor)
         try:
             time.sleep(0.35)
-            # KCI deployments vary by contract. Keep the live call conservative and
-            # fall back to mock data unless a compatible endpoint is configured.
-            endpoint = os.getenv("KCI_API_URL")
-            if not endpoint:
-                return self._sample(professor)
             response = requests.get(
-                endpoint,
-                params={"key": self.api_key, "author": professor.name, "university": professor.university},
+                os.environ["KCI_API_URL"],
+                params={"key": self.api_key, "author": professor.name},
                 timeout=self.timeout,
+                headers={"User-Agent": "LabFitResearchMVP/0.2"},
             )
             response.raise_for_status()
-            payload = response.json()
-            return [normalize_kci_item(item) for item in payload.get("papers", [])]
+            return [self.normalize(item) for item in response.json().get("papers", [])]
         except requests.RequestException:
-            return self._sample(professor)
+            return self._sample_by_professor(professor)
 
-    def _sample(self, professor: Professor) -> list[NormalizedPaperCandidate]:
+    def search_by_title(self, title: str) -> list[NormalizedPaperCandidate]:
         payload = load_sample_json("sample_kci_response.json")
-        return [normalize_kci_item(item) for item in payload["papers"] if professor_matches_item(professor, item)]
+        return [self.normalize(item) for item in payload["papers"] if title_matches_item(title, item)]
+
+    def normalize(self, raw_payload: dict[str, Any]) -> NormalizedPaperCandidate:
+        return normalize_kci_item(raw_payload)
+
+    def _sample_by_professor(self, professor: Professor) -> list[NormalizedPaperCandidate]:
+        payload = load_sample_json("sample_kci_response.json")
+        return [self.normalize(item) for item in payload["papers"] if professor_matches_item(professor, item)]

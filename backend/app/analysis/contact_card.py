@@ -13,27 +13,46 @@ def build_contact_card(
 ) -> dict[str, Any]:
     fit = analyze_fit(user_interest, papers, analysis.get("evidence_confidence", "low")) if user_interest else None
     representative = (analysis.get("representative_papers") or [])[:1]
-    recent = (analysis.get("recent_papers") or [])[:1]
+    recent = (analysis.get("recent_important_papers") or analysis.get("recent_papers") or [])[:1]
     interest_related = (fit or {}).get("related_papers", [])[:1]
 
     reading_list: list[dict[str, Any]] = []
-    reading_list.extend(_reading_items(representative, "대표 논문", "연구실의 핵심 연구 흐름을 파악하기 위한 출발점입니다."))
-    reading_list.extend(_reading_items(recent, "최근 논문", "최근 연구 방향과 사용 기술 변화를 확인하기 좋습니다."))
-    reading_list.extend(_reading_items(interest_related, "관심 주제 관련 논문", "내 관심 주제와 맞닿는 부분을 컨택 메일에 구체적으로 언급할 수 있습니다."))
+    reading_list.extend(
+        _reading_items(
+            representative,
+            "대표 논문",
+            "이 논문은 교수님의 기존 연구축을 이해하기 좋은 대표 논문입니다.",
+        )
+    )
+    reading_list.extend(
+        _reading_items(
+            recent,
+            "최근 연구 논문",
+            "이 논문은 최근 3~5년 내 연구 방향을 파악하기 좋습니다.",
+        )
+    )
+    reading_list.extend(
+        _reading_items(
+            interest_related,
+            "관심주제 관련 논문",
+            "이 논문은 사용자의 관심 주제와 가장 직접적으로 연결되는 후보입니다.",
+        )
+    )
 
     if not reading_list:
         reading_list.append(
             {
                 "title": "공개 논문 데이터 제한",
                 "year": None,
-                "why_read": "논문 대신 연구실 소개, 강의 과목, 프로젝트 페이지를 먼저 확인하세요.",
+                "why_read": "논문보다 연구실 소개, 교수소개 페이지, 프로젝트 정보를 먼저 확인하세요.",
                 "category": "확인 필요",
             }
         )
 
     keywords = analysis.get("recent_keywords") or analysis.get("overall_keywords") or []
     email_points = [
-        f"{keyword} 관련 공개 연구 흐름을 보고 관심을 갖게 되었다고 구체적으로 언급" for keyword in keywords[:3]
+        f"{keyword} 관련 공개 연구 흐름을 보고 관심을 갖게 되었음을 구체적으로 언급"
+        for keyword in keywords[:3]
     ] or ["교수소개 페이지의 연구 키워드와 본인의 관심 주제가 만나는 지점을 구체적으로 언급"]
 
     return {
@@ -60,7 +79,7 @@ def _reading_items(items: list[dict[str, Any]], category: str, why: str) -> list
             "title": item.get("title"),
             "year": item.get("year"),
             "venue": item.get("venue"),
-            "why_read": why,
+            "why_read": item.get("why_read_this") or why,
             "category": category,
         }
         for item in items

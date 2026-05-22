@@ -37,6 +37,7 @@ def score_master_paper_match(
     author_role = detect_author_role(professor.name, getattr(professor, "english_name", None), paper.get("authors", []), paper)
     name_score, name_note = _name_score(professor.name, paper.get("authors", []))
     english_score, english_note = _english_name_score(getattr(professor, "english_name", None), paper.get("authors", []))
+    name_evidence_score = max(name_score, english_score)
     affiliation_score, affiliation_note = _affiliation_score(getattr(professor, "university", ""), paper)
     department_score, department_note = _department_score(getattr(professor, "department", ""), paper)
     topic_score, topic_matches = _topic_score(professor, paper)
@@ -48,22 +49,20 @@ def score_master_paper_match(
     cross_source_score, source_note = _cross_source_agreement_score(paper)
 
     raw_score = (
-        0.16 * name_score
-        + 0.08 * english_score
-        + 0.16 * affiliation_score
+        0.28 * name_evidence_score
+        + 0.15 * affiliation_score
         + 0.08 * department_score
         + 0.14 * topic_score
-        + 0.10 * coauthor_score
-        + 0.10 * identifier_score
+        + 0.07 * coauthor_score
+        + 0.08 * identifier_score
         + 0.08 * lab_page_evidence
         + 0.04 * career_year_score
-        + 0.03 * source_confidence_score
+        + 0.05 * source_confidence_score
         + 0.03 * cross_source_score
     )
 
     warnings = _warnings(
-        name_score=name_score,
-        english_score=english_score,
+        name_evidence_score=name_evidence_score,
         affiliation_score=affiliation_score,
         department_score=department_score,
         topic_score=topic_score,
@@ -74,15 +73,18 @@ def score_master_paper_match(
     )
     score = _apply_contamination_guards(
         raw_score,
-        name_score=name_score,
+        name_evidence_score=name_evidence_score,
         affiliation_score=affiliation_score,
-        department_score=department_score,
         topic_score=topic_score,
         identifier_score=identifier_score,
+        lab_page_evidence=lab_page_evidence,
         author_role=author_role,
     )
     status = status_from_score(score)
-    if warnings and status == ACCEPTED:
+    serious_warning = affiliation_score < 0.25 or topic_score < 0.25 or (
+        author_role == "middle_coauthor" and topic_score < 0.35
+    )
+    if warnings and status == ACCEPTED and lab_page_evidence < 0.9 and serious_warning:
         status = NEEDS_REVIEW
 
     evidence = {
@@ -101,6 +103,7 @@ def score_master_paper_match(
         "score_components": {
             "NameScore": round(name_score, 3),
             "EnglishNameScore": round(english_score, 3),
+            "NameEvidenceScore": round(name_evidence_score, 3),
             "AffiliationScore": round(affiliation_score, 3),
             "DepartmentScore": round(department_score, 3),
             "TopicScore": round(topic_score, 3),
@@ -122,11 +125,11 @@ def score_master_paper_match(
 
 
 def status_from_score(score: float) -> str:
-    if score >= 0.82:
+    if score >= 0.70:
         return ACCEPTED
-    if score >= 0.62:
+    if score >= 0.45:
         return NEEDS_REVIEW
-    if score >= 0.42:
+    if score >= 0.25:
         return WEAK_CANDIDATE
     return REJECTED
 
@@ -142,7 +145,7 @@ def _name_score(professor_name: str, authors: list[str]) -> tuple[float, str]:
 
 def _english_name_score(english_name: str | None, authors: list[str]) -> tuple[float, str]:
     if not english_name:
-        return 0.5, "English name not available; neutral signal used"
+        return 0.0, "English name not available"
     variants = [english_name, _initial_name(english_name)]
     parts = english_name.split()
     if len(parts) >= 2:
@@ -158,27 +161,25 @@ def _english_name_score(english_name: str | None, authors: list[str]) -> tuple[f
 def _affiliation_score(university: str, paper: dict[str, Any]) -> tuple[float, str]:
     affiliations = " ".join(paper.get("author_affiliations", [])).lower()
     if not affiliations:
-        return 0.2, "Author affiliation is unclear"
+        return 0.45, "Author affiliation is missing; kept as review evidence rather than rejection"
     if university and university.lower() in affiliations:
         return 1.0, "Current university found in paper affiliation"
     similarity = SequenceMatcher(None, university.lower(), affiliations).ratio() if university else 0.0
     if similarity >= 0.55:
-        return 0.48, "Affiliation partially resembles current university"
+        return 0.55, "Affiliation partially resembles current university"
     return 0.05, "Current university not found in paper affiliation"
 
 
 def _department_score(department: str, paper: dict[str, Any]) -> tuple[float, str]:
     affiliations = " ".join(paper.get("author_affiliations", [])).lower()
     if not affiliations:
-        return 0.25, "Department affiliation is unclear"
+        return 0.35, "Department affiliation is missing"
     if department and department.lower() in affiliations:
         return 1.0, "Current department found in paper affiliation"
-    department_tokens = _tokens(department)
-    affiliation_tokens = _tokens(affiliations)
-    overlap = department_tokens & affiliation_tokens
+    overlap = _tokens(department) & _tokens(affiliations)
     if overlap:
         return 0.55, f"Department tokens partially matched: {', '.join(sorted(overlap))}"
-    return 0.1, "Current department not found in paper affiliation"
+    return 0.15, "Current department not found in paper affiliation"
 
 
 def _topic_score(professor: Any, paper: dict[str, Any]) -> tuple[float, list[str]]:
@@ -198,8 +199,9 @@ def _topic_score(professor: Any, paper: dict[str, Any]) -> tuple[float, list[str
     if not paper_terms:
         return 0.2, []
     overlap = sorted(professor_terms & paper_terms)
-    score = min(1.0, len(overlap) / max(1, min(len(professor_terms), 6)) + (0.15 if overlap else 0))
-    return score, overlap
+    if not overlap:
+        return 0.2, []
+    return min(1.0, len(overlap) / max(1, min(len(professor_terms), 6)) + 0.18), overlap
 
 
 def _coauthor_score(
@@ -215,10 +217,9 @@ def _coauthor_score(
         professor_names.add(_norm(_initial_name(professor.english_name)))
     coauthors = [author for author in authors if author not in professor_names]
     if not coauthors:
-        return 0.4, "No coauthor network signal"
+        return 0.45, "No coauthor network signal"
     repeated = sum(1 for author in coauthors if repeated_coauthors[author] >= 2)
-    role_factor = author_role_weight(author_role)
-    score = min(1.0, (0.25 + repeated / max(1, len(coauthors))) * role_factor + 0.15)
+    score = min(1.0, (0.25 + repeated / max(1, len(coauthors))) * author_role_weight(author_role) + 0.15)
     if repeated:
         return score, f"{repeated} recurring coauthors found"
     return score, "No recurring coauthors found"
@@ -226,17 +227,20 @@ def _coauthor_score(
 
 def _identifier_score(paper: dict[str, Any]) -> tuple[float, str]:
     source_ids = paper.get("source_ids", {})
-    if source_ids.get("openalex_author") or source_ids.get("orcid") or source_ids.get("dblp"):
+    if source_ids.get("orcid") or source_ids.get("dblp"):
         return 1.0, "Stable author identifier matched"
     if len(paper.get("source_list", [])) >= 2 and (paper.get("doi") or paper.get("uci")):
         return 0.72, "DOI/UCI and cross-source metadata agree"
     if paper.get("doi") or paper.get("uci"):
-        return 0.35, "Paper identifier exists but author identifier is not confirmed"
+        return 0.4, "Paper identifier exists but author identifier is not confirmed"
     return 0.0, "No DOI/UCI/author identifier signal"
 
 
 def _lab_page_evidence(paper: dict[str, Any], lab_titles: list[str]) -> float:
     title = paper.get("display_title") or ""
+    source_list = set(paper.get("source_list", []))
+    if "professor_lab_page_publication" in source_list:
+        return 1.0
     if not title or not lab_titles:
         return 0.0
     best = max(SequenceMatcher(None, title.lower(), lab_title.lower()).ratio() for lab_title in lab_titles)
@@ -264,11 +268,11 @@ def _source_confidence_score(paper: dict[str, Any]) -> float:
     default_map = {
         "professor_lab_page_publication": 1.0,
         "kci": 0.82,
-        "openalex": 0.8,
-        "dblp": 0.85,
-        "crossref": 0.8,
         "riss": 0.65,
         "dbpia": 0.65,
+        "scienceon": 0.7,
+        "crossref": 0.8,
+        "dblp": 0.85,
     }
     if not source_list:
         return 0.2
@@ -287,29 +291,32 @@ def _cross_source_agreement_score(paper: dict[str, Any]) -> tuple[float, str]:
 
 def _apply_contamination_guards(
     score: float,
-    name_score: float,
+    name_evidence_score: float,
     affiliation_score: float,
-    department_score: float,
     topic_score: float,
     identifier_score: float,
+    lab_page_evidence: float,
     author_role: str,
 ) -> float:
-    if name_score >= 0.9 and affiliation_score < 0.25 and topic_score < 0.25:
-        return min(score, 0.39)
-    if name_score >= 0.9 and affiliation_score < 0.25 and identifier_score < 0.5:
-        return min(score, 0.41)
-    if name_score >= 0.9 and affiliation_score < 0.45 and department_score < 0.35 and topic_score < 0.35:
-        return min(score, 0.58)
+    if name_evidence_score < 0.25 and topic_score < 0.25 and identifier_score < 0.35:
+        return min(score, 0.24)
+    if name_evidence_score >= 0.85 and lab_page_evidence >= 0.9:
+        return max(score, 0.70)
+    if name_evidence_score >= 0.85 and affiliation_score < 0.15 and topic_score < 0.25:
+        return max(min(score, 0.45), 0.45)
+    if name_evidence_score >= 0.85 and affiliation_score < 0.15 and topic_score >= 0.25:
+        return max(min(score, 0.69), 0.45)
+    if name_evidence_score >= 0.85 and affiliation_score >= 0.45 and topic_score >= 0.25:
+        return max(score, 0.45)
+    if name_evidence_score >= 0.85:
+        return max(score, 0.25)
     if author_role == "middle_coauthor" and topic_score < 0.35:
-        return min(score, 0.61)
-    if name_score < 0.6:
-        return min(score, 0.39)
+        return min(max(score, 0.25), 0.44)
     return score
 
 
 def _warnings(
-    name_score: float,
-    english_score: float,
+    name_evidence_score: float,
     affiliation_score: float,
     department_score: float,
     topic_score: float,
@@ -319,22 +326,22 @@ def _warnings(
     paper: dict[str, Any],
 ) -> list[str]:
     warnings: list[str] = []
-    if name_score >= 0.75 and affiliation_score < 0.35:
-        warnings.append("동명이인 가능성으로 검증 필요: 이름은 유사하지만 현재 학교 소속 근거가 약합니다.")
-    if name_score >= 0.75 and topic_score < 0.25:
-        warnings.append("동명이인 가능성으로 검증 필요: 이름은 유사하지만 연구 주제가 다릅니다.")
-    if name_score >= 0.75 and coauthor_score < 0.35 and identifier_score < 0.5:
-        warnings.append("동명이인 가능성으로 검증 필요: 반복 공저자 네트워크 또는 식별자 근거가 약합니다.")
-    if english_score < 0.35 and not _has_korean_author_signal(paper):
-        warnings.append("영문명 매칭 근거가 약합니다.")
-    if department_score < 0.25:
+    if name_evidence_score >= 0.75 and affiliation_score < 0.15:
+        warnings.append("검증 필요: 이름 근거는 있으나 현재 학교 소속이 논문 메타데이터에서 확인되지 않습니다.")
+    if name_evidence_score >= 0.75 and topic_score < 0.20 and identifier_score < 0.35:
+        warnings.append("검증 필요: 이름은 유사하지만 공식 연구분야와의 연결 근거가 약합니다.")
+    if name_evidence_score < 0.35 and not _has_korean_author_signal(paper):
+        warnings.append("저자명 매칭 근거가 약합니다.")
+    if department_score < 0.20 and affiliation_score >= 0.25:
         warnings.append("학과 소속 근거가 불명확합니다.")
     if author_role == "middle_coauthor" and topic_score < 0.35:
-        warnings.append("공동저자 오염 가능성: middle_coauthor이고 공식 연구 키워드와 연결성이 낮습니다.")
+        warnings.append("공동저자 오염 가능성: middle_coauthor이고 공식 연구 키워드와의 연결성이 낮습니다.")
+    if coauthor_score < 0.35 and identifier_score < 0.35 and name_evidence_score >= 0.75:
+        warnings.append("동명이인 가능성으로 검증 필요: 반복 공저자 또는 식별자 근거가 약합니다.")
     if paper.get("duplicate_status") == "duplicate_possible":
         warnings.append("다른 후보와 중복 가능성이 있으나 자동 병합하지 않았습니다.")
     for note in paper.get("merge_notes", []):
-        if "여러 명" in note or "불명확" in note or "이름만" in note:
+        if "불명확" in note or "이름 중심" in note or "중복 가능성" in note:
             warnings.append(note)
     return list(dict.fromkeys(warnings))
 
@@ -362,16 +369,25 @@ def _tokens(text: str) -> set[str]:
         "based",
         "study",
         "analysis",
+        "research",
+        "paper",
+        "article",
+        "system",
+        "method",
+        "result",
         "연구",
-        "기반",
+        "논문",
         "분석",
+        "방법",
+        "결과",
         "학과",
         "대학교",
+        "교수",
     }
     return {
         token.lower()
         for token in re.findall(r"[A-Za-z가-힣0-9]{2,}", text or "")
-        if token.lower() not in stopwords
+        if token.lower() not in stopwords and not token.isdigit()
     }
 
 

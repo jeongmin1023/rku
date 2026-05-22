@@ -34,81 +34,84 @@ class NormalizedPaperCandidate(BaseModel):
 
 
 def normalize_kci_item(item: dict[str, Any]) -> NormalizedPaperCandidate:
-    title_ko = item.get("title_ko") or _maybe_korean_title(item.get("title"))
-    title_en = item.get("title_en") or _maybe_english_title(item.get("title"))
-    display_title = title_en or title_ko or item.get("title") or "Untitled"
-    affiliations = _as_list(item.get("author_affiliations") or item.get("affiliations"))
-    warnings = _candidate_warnings(item, affiliations)
-    confidence = _confidence_from_item(
+    return _normalize_domestic_item(item, source="kci", default_confidence=0.9 if _affiliations(item) else 0.65)
+
+
+def normalize_riss_item(item: dict[str, Any]) -> NormalizedPaperCandidate:
+    return _normalize_domestic_item(item, source="riss", default_confidence=0.65)
+
+
+def normalize_dbpia_item(item: dict[str, Any]) -> NormalizedPaperCandidate:
+    return _normalize_domestic_item(item, source="dbpia", default_confidence=0.65)
+
+
+def normalize_scienceon_item(item: dict[str, Any]) -> NormalizedPaperCandidate:
+    return _normalize_domestic_item(item, source="scienceon", default_confidence=0.7)
+
+
+def normalize_lab_publication_item(item: dict[str, Any]) -> NormalizedPaperCandidate:
+    return _normalize_domestic_item(
         item,
-        default=0.9 if affiliations else 0.65,
-        name_only_default=0.2,
+        source="professor_lab_page_publication",
+        default_confidence=1.0,
     )
+
+
+def normalize_crossref_item(item: dict[str, Any]) -> NormalizedPaperCandidate:
+    title = _first(item.get("title")) or item.get("title_en") or item.get("title_ko") or item.get("title") or "Untitled"
+    authors = []
+    for author in item.get("author", []) or []:
+        name = " ".join(part for part in [author.get("given"), author.get("family")] if part)
+        if name:
+            authors.append(name)
+    authors.extend(_as_list(item.get("authors")))
+    affiliations = _affiliations(item)
+    doi = normalize_doi(item.get("DOI") or item.get("doi"))
+    warnings = _candidate_warnings(item, affiliations)
+    if not doi:
+        warnings.append("Crossref 메타데이터에 DOI가 없어 보강 근거가 제한적입니다.")
     return NormalizedPaperCandidate(
-        source="kci",
-        source_id=str(item.get("source_id") or item.get("kci_id") or item.get("uci") or display_title),
-        title_ko=title_ko,
-        title_en=title_en,
-        normalized_title=normalize_title(display_title),
-        authors=_as_list(item.get("authors")),
+        source="crossref",
+        source_id=str(item.get("source_id") or doi or title),
+        title_ko=item.get("title_ko") or _maybe_korean_title(title),
+        title_en=item.get("title_en") or _maybe_english_title(title),
+        normalized_title=normalize_title(title),
+        authors=list(dict.fromkeys(authors)),
         author_affiliations=affiliations,
-        year=_to_int(item.get("year") or item.get("publication_year")),
-        venue=item.get("venue") or item.get("journal"),
-        doi=normalize_doi(item.get("doi")),
-        uci=item.get("uci") or item.get("kci_id"),
-        abstract=item.get("abstract"),
-        keywords=_as_list(item.get("keywords")),
-        citation_count=_to_int(item.get("citation_count")),
-        citation_source="kci",
-        url=item.get("url"),
+        year=_crossref_year(item) or _to_int(item.get("year")),
+        venue=_first(item.get("container-title")) or item.get("venue") or item.get("journal"),
+        doi=doi,
+        uci=item.get("uci"),
+        abstract=_strip_tags(item.get("abstract")),
+        keywords=_as_list(item.get("subject") or item.get("keywords")),
+        citation_count=_to_int(item.get("is-referenced-by-count") or item.get("citation_count")),
+        citation_source="crossref",
+        url=item.get("URL") or item.get("url"),
         raw_payload=item,
-        source_confidence=confidence,
-        language=detect_language(" ".join([display_title, item.get("abstract") or ""])),
+        source_confidence=_confidence_from_item(item, default=0.8 if doi else 0.55),
+        language=detect_language(" ".join([title, item.get("abstract") or ""])),
         source_warnings=warnings,
     )
 
 
 def normalize_openalex_item(item: dict[str, Any]) -> NormalizedPaperCandidate:
+    """Kept for optional future expansion; not used by default harvest."""
+
     title = item.get("title") or item.get("display_name") or "Untitled"
-    authorships = item.get("authorships", [])
+    authorships = item.get("authorships", []) or []
     authors = [
         (authorship.get("author") or {}).get("display_name")
         for authorship in authorships
         if (authorship.get("author") or {}).get("display_name")
     ] or _as_list(item.get("authors"))
     affiliations: list[str] = []
-    openalex_author_ids: list[str] = []
     for authorship in authorships:
-        author_id = (authorship.get("author") or {}).get("id")
-        if author_id:
-            openalex_author_ids.append(author_id)
-        for institution in authorship.get("institutions", []):
-            name = institution.get("display_name")
-            if name:
-                affiliations.append(name)
-    affiliations.extend(_as_list(item.get("author_affiliations") or item.get("institutions")))
-    concepts = [
-        concept.get("display_name")
-        for concept in item.get("concepts", [])
-        if concept.get("display_name")
-    ]
-    topics = [
-        topic.get("display_name")
-        for topic in item.get("topics", [])
-        if topic.get("display_name")
-    ]
-    source = item.get("primary_location", {}).get("source") or {}
-    warnings = _candidate_warnings(item, affiliations)
-    if item.get("author_candidates_count", 1) and int(item.get("author_candidates_count", 1)) > 1:
-        warnings.append("OpenAlex Author 후보가 여러 명입니다.")
-    confidence = _confidence_from_item(
-        item,
-        default=0.9 if item.get("openalex_author_id") or openalex_author_ids else 0.75,
-        name_only_default=0.2,
-    )
-    raw_payload = dict(item)
-    if openalex_author_ids:
-        raw_payload["openalex_author_ids"] = openalex_author_ids
+        for institution in authorship.get("institutions", []) or []:
+            if institution.get("display_name"):
+                affiliations.append(institution["display_name"])
+    affiliations.extend(_affiliations(item))
+    concepts = [concept.get("display_name") for concept in item.get("concepts", []) or [] if concept.get("display_name")]
+    source = (item.get("primary_location") or {}).get("source") or {}
     return NormalizedPaperCandidate(
         source="openalex",
         source_id=str(item.get("id") or item.get("source_id") or title),
@@ -122,97 +125,14 @@ def normalize_openalex_item(item: dict[str, Any]) -> NormalizedPaperCandidate:
         doi=normalize_doi(item.get("doi")),
         uci=item.get("uci"),
         abstract=item.get("abstract") or restore_abstract(item.get("abstract_inverted_index")),
-        keywords=list(dict.fromkeys(_as_list(item.get("keywords")) + concepts + topics)),
+        keywords=list(dict.fromkeys(_as_list(item.get("keywords")) + concepts)),
         citation_count=_to_int(item.get("cited_by_count") or item.get("citation_count")),
         citation_source="openalex",
         url=item.get("url") or item.get("id"),
-        raw_payload=raw_payload,
-        source_confidence=confidence,
-        language=detect_language(" ".join([title, item.get("abstract") or ""])),
-        source_warnings=warnings,
-    )
-
-
-def normalize_crossref_item(item: dict[str, Any]) -> NormalizedPaperCandidate:
-    title = _first(item.get("title")) or item.get("title_en") or item.get("title_ko") or "Untitled"
-    authors = []
-    for author in item.get("author", []):
-        name = " ".join(part for part in [author.get("given"), author.get("family")] if part)
-        if name:
-            authors.append(name)
-    authors.extend(_as_list(item.get("authors")))
-    affiliations = _as_list(item.get("author_affiliations") or item.get("affiliations"))
-    year = _crossref_year(item) or _to_int(item.get("year"))
-    warnings = _candidate_warnings(item, affiliations)
-    if not normalize_doi(item.get("DOI") or item.get("doi")):
-        warnings.append("Crossref 후보에 DOI가 없어 메타데이터 신뢰도를 낮췄습니다.")
-    return NormalizedPaperCandidate(
-        source="crossref",
-        source_id=str(item.get("DOI") or item.get("doi") or item.get("source_id") or title),
-        title_ko=item.get("title_ko") or _maybe_korean_title(title),
-        title_en=item.get("title_en") or _maybe_english_title(title),
-        normalized_title=normalize_title(title),
-        authors=list(dict.fromkeys(authors)),
-        author_affiliations=affiliations,
-        year=year,
-        venue=_first(item.get("container-title")) or item.get("venue"),
-        doi=normalize_doi(item.get("DOI") or item.get("doi")),
-        uci=item.get("uci"),
-        abstract=_strip_tags(item.get("abstract")),
-        keywords=_as_list(item.get("subject") or item.get("keywords")),
-        citation_count=_to_int(item.get("is-referenced-by-count") or item.get("citation_count")),
-        citation_source="crossref",
-        url=item.get("URL") or item.get("url"),
         raw_payload=item,
-        source_confidence=_confidence_from_item(item, default=0.8 if item.get("DOI") or item.get("doi") else 0.55),
+        source_confidence=_confidence_from_item(item, default=0.75, name_only_default=0.2),
         language=detect_language(" ".join([title, item.get("abstract") or ""])),
-        source_warnings=warnings,
-    )
-
-
-def normalize_dbpia_item(item: dict[str, Any]) -> NormalizedPaperCandidate:
-    return _normalize_title_author_source_item(item, source="dbpia", default_confidence=0.65)
-
-
-def normalize_riss_item(item: dict[str, Any]) -> NormalizedPaperCandidate:
-    return _normalize_title_author_source_item(item, source="riss", default_confidence=0.65)
-
-
-def normalize_lab_publication_item(item: dict[str, Any]) -> NormalizedPaperCandidate:
-    return _normalize_title_author_source_item(item, source="professor_lab_page_publication", default_confidence=1.0)
-
-
-def _normalize_title_author_source_item(
-    item: dict[str, Any],
-    source: str,
-    default_confidence: float,
-) -> NormalizedPaperCandidate:
-    title_ko = item.get("title_ko") or _maybe_korean_title(item.get("title"))
-    title_en = item.get("title_en") or _maybe_english_title(item.get("title"))
-    display_title = title_en or title_ko or item.get("title") or "Untitled"
-    affiliations = _as_list(item.get("author_affiliations") or item.get("affiliations"))
-    warnings = _candidate_warnings(item, affiliations)
-    return NormalizedPaperCandidate(
-        source=source,
-        source_id=str(item.get("source_id") or item.get("id") or item.get("uci") or display_title),
-        title_ko=title_ko,
-        title_en=title_en,
-        normalized_title=normalize_title(display_title),
-        authors=_as_list(item.get("authors")),
-        author_affiliations=affiliations,
-        year=_to_int(item.get("year") or item.get("publication_year")),
-        venue=item.get("venue") or item.get("journal"),
-        doi=normalize_doi(item.get("doi")),
-        uci=item.get("uci") or item.get("kci_id"),
-        abstract=item.get("abstract"),
-        keywords=_as_list(item.get("keywords")),
-        citation_count=_to_int(item.get("citation_count")),
-        citation_source=item.get("citation_source") or source,
-        url=item.get("url"),
-        raw_payload=item,
-        source_confidence=_confidence_from_item(item, default=default_confidence, name_only_default=0.2),
-        language=detect_language(" ".join([display_title, item.get("abstract") or ""])),
-        source_warnings=warnings,
+        source_warnings=_candidate_warnings(item, affiliations),
     )
 
 
@@ -220,6 +140,7 @@ def normalize_title(title: str | None) -> str:
     if not title:
         return ""
     lowered = title.lower()
+    lowered = re.sub(r"https?://\S+|[\w.+-]+@[\w-]+(?:\.[\w-]+)+", " ", lowered)
     lowered = re.sub(r"[\W_]+", " ", lowered, flags=re.UNICODE)
     lowered = re.sub(r"\s+", " ", lowered).strip()
     return lowered
@@ -256,12 +177,47 @@ def detect_language(text: str | None) -> str:
     return "unknown"
 
 
+def _normalize_domestic_item(
+    item: dict[str, Any],
+    source: str,
+    default_confidence: float,
+) -> NormalizedPaperCandidate:
+    title = item.get("title") or item.get("title_ko") or item.get("title_en") or "Untitled"
+    title_ko = item.get("title_ko") or _maybe_korean_title(title)
+    title_en = item.get("title_en") or _maybe_english_title(title)
+    display_title = title_en or title_ko or title
+    affiliations = _affiliations(item)
+    warnings = _candidate_warnings(item, affiliations)
+    return NormalizedPaperCandidate(
+        source=source,
+        source_id=str(item.get("source_id") or item.get("id") or item.get("kci_id") or item.get("uci") or display_title),
+        title_ko=title_ko,
+        title_en=title_en,
+        normalized_title=normalize_title(display_title),
+        authors=_as_list(item.get("authors")),
+        author_affiliations=affiliations,
+        year=_to_int(item.get("year") or item.get("publication_year")),
+        venue=item.get("venue") or item.get("journal"),
+        doi=normalize_doi(item.get("doi")),
+        uci=item.get("uci") or item.get("kci_id"),
+        abstract=item.get("abstract"),
+        keywords=_as_list(item.get("keywords")),
+        citation_count=_to_int(item.get("citation_count") or item.get("usage_count")),
+        citation_source=item.get("citation_source") or source,
+        url=item.get("url"),
+        raw_payload=item,
+        source_confidence=_confidence_from_item(item, default=default_confidence, name_only_default=0.2),
+        language=detect_language(" ".join([display_title, item.get("abstract") or ""])),
+        source_warnings=warnings,
+    )
+
+
 def _candidate_warnings(item: dict[str, Any], affiliations: list[str]) -> list[str]:
     warnings = list(_as_list(item.get("source_warnings")))
     if not affiliations:
         warnings.append("저자 소속 정보가 불명확합니다.")
     if item.get("name_only_match"):
-        warnings.append("이름만으로 검색된 후보입니다.")
+        warnings.append("이름 중심 검색으로 수집된 후보입니다.")
     return list(dict.fromkeys(warnings))
 
 
@@ -270,9 +226,15 @@ def _confidence_from_item(
     default: float,
     name_only_default: float = 0.2,
 ) -> float:
+    if item.get("source_confidence") is not None:
+        return float(item["source_confidence"])
     if item.get("name_only_match"):
-        return float(item.get("source_confidence", name_only_default))
-    return float(item.get("source_confidence", default))
+        return name_only_default
+    return default
+
+
+def _affiliations(item: dict[str, Any]) -> list[str]:
+    return _as_list(item.get("author_affiliations") or item.get("affiliations") or item.get("institutions"))
 
 
 def _as_list(value: Any) -> list[str]:

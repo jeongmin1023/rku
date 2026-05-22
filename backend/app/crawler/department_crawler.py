@@ -12,14 +12,30 @@ from bs4 import BeautifulSoup
 from app.schemas import ProfessorCandidate
 
 
-USER_AGENT = "LabFitResearchMVP/0.1 (+https://example.local; respectful academic crawler)"
+USER_AGENT = "LabFitResearchMVP/0.2 (+https://example.local; respectful academic crawler)"
 EMAIL_RE = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
 KOREAN_NAME_RE = re.compile(r"^[가-힣]{2,5}$")
 ENGLISH_NAME_RE = re.compile(r"\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3}\b")
-ENGLISH_NAME_TOKEN_RE = re.compile(r"^[A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3}$")
 TITLE_WORDS = ("교수", "부교수", "조교수", "전임", "Professor", "Lecturer", "Assistant Professor")
 KEYWORD_LABELS = ("연구분야", "연구 분야", "Research", "전공", "관심분야", "키워드")
 LAB_LABELS = ("연구실", "Lab", "Laboratory")
+BLOCKED_NAME_WORDS = (
+    "학과소개",
+    "교수진",
+    "교수소개",
+    "학생활동",
+    "입학안내",
+    "공지사항",
+    "교육과정",
+    "학사안내",
+    "대학원",
+    "커뮤니티",
+    "자료실",
+    "오시는길",
+    "홈페이지",
+    "로그인",
+    "메뉴",
+)
 
 
 @dataclass
@@ -70,7 +86,7 @@ def parse_professors(html: str, university: str, department: str, source_url: st
         name = _extract_name(text)
         if not name and email:
             name = _nearest_name(block, email)
-        if not name:
+        if not name or _contains_blocked_name_word(name):
             continue
 
         profile_url = _first_link(block, source_url)
@@ -127,10 +143,10 @@ def _extract_email(text: str) -> str | None:
 
 
 def _extract_name(text: str) -> str | None:
-    tokens = re.split(r"[\s|,/·:()]+", text)
-    for token in tokens[:20]:
+    tokens = re.split(r"[\s|,/:()·]+", text)
+    for token in tokens[:24]:
         token = token.strip()
-        if KOREAN_NAME_RE.match(token) and not token.endswith("교수"):
+        if KOREAN_NAME_RE.match(token) and not token.endswith("교수") and not _contains_blocked_name_word(token):
             return token
     english_match = ENGLISH_NAME_RE.search(text)
     return english_match.group(0) if english_match else None
@@ -164,7 +180,7 @@ def _extract_title(text: str) -> str | None:
 
 def _extract_label_value(text: str, labels: tuple[str, ...]) -> str | None:
     for label in labels:
-        pattern = rf"{re.escape(label)}\s*[:：]?\s*(.+?)(?:\s+(?:Email|E-mail|메일|전화|Tel|Office|홈페이지|상세|$))"
+        pattern = rf"{re.escape(label)}\s*[:：]\s*(.+?)(?:\s+(?:Email|E-mail|메일|전화|Tel|Office|홈페이지|상세|$))"
         match = re.search(pattern, text, flags=re.IGNORECASE)
         if match:
             value = match.group(1).strip(" -|")
@@ -204,13 +220,7 @@ def _evidence(text: str, email: str | None, keywords: str | None, profile_url: s
     return evidence or ["이름 패턴 기반 후보"]
 
 
-def _confidence(
-    email: str | None,
-    keywords: str | None,
-    profile_url: str | None,
-    title: str | None,
-    text: str,
-) -> float:
+def _confidence(email: str | None, keywords: str | None, profile_url: str | None, title: str | None, text: str) -> float:
     confidence = 0.35
     if email:
         confidence += 0.2
@@ -267,6 +277,11 @@ def sample_professors(university: str, department: str, source_url: str) -> list
             official_keywords="환자안전, 감염관리, 보건정보",
             source_url=source_url,
             extraction_confidence=0.72,
-            evidence=["샘플 데이터", "신임 연구실 예시"],
+            evidence=["샘플 데이터", "신임 연구자 예시"],
         ),
     ]
+
+
+def _contains_blocked_name_word(name: str) -> bool:
+    compact_name = re.sub(r"\s+", "", name)
+    return any(word in compact_name for word in BLOCKED_NAME_WORDS)

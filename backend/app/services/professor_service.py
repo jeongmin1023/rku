@@ -25,9 +25,14 @@ def professor_cards(professors: list[Professor]) -> list[dict]:
                 **_professor_base(professor),
                 "keywords": analysis["five_year_keywords"][:5] or _keyword_list(professor.official_keywords),
                 "trend_summary": analysis["trend_summary"],
+                "recent_keywords": analysis["recent_keywords"],
+                "five_year_keywords": analysis["five_year_keywords"],
+                "overall_keywords": analysis["overall_keywords"],
+                "trend_confidence": analysis["trend_confidence"],
                 "warnings": analysis["warnings"],
                 "accepted_paper_count": status_counts["accepted"],
                 "needs_review_paper_count": status_counts["needs_review"],
+                "weak_candidate_count": status_counts["weak_candidate"],
                 "rejected_paper_count": status_counts["rejected"],
                 "source_coverage": _source_coverage(professor),
             }
@@ -42,7 +47,7 @@ def professor_detail(professor: Professor) -> dict:
         "papers": [
             professor_paper_to_dict(link)
             for link in professor.paper_links
-            if link.match_status in {"accepted", "needs_review"}
+            if link.match_status in {"accepted", "needs_review", "weak_candidate"}
         ],
         "analysis": analysis_to_dict(professor.analysis),
     }
@@ -111,7 +116,7 @@ def _keyword_list(value: str | None) -> list[str]:
 
 
 def _paper_status_counts(professor: Professor) -> dict[str, int]:
-    counts = {"accepted": 0, "needs_review": 0, "rejected": 0}
+    counts = {"accepted": 0, "needs_review": 0, "weak_candidate": 0, "rejected": 0}
     for link in professor.paper_links:
         if link.match_status in counts:
             counts[link.match_status] += 1
@@ -136,5 +141,6 @@ def _source_label(source: str) -> str:
         "riss": "RISS",
         "dblp": "DBLP",
         "scienceon": "ScienceON",
+        "professor_lab_page_publication": "공식페이지",
     }
     return mapping.get(source.lower(), source)

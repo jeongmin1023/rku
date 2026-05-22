@@ -37,14 +37,26 @@ def init_db() -> None:
 def _ensure_sqlite_columns() -> None:
     """Small MVP migration shim for local SQLite databases created before this schema."""
 
-    required = {
-        "merge_confidence": "FLOAT DEFAULT 0.5",
-        "merge_notes_json": "TEXT",
-        "source_confidence_signals_json": "TEXT",
-    }
     with engine.begin() as connection:
         rows = connection.execute(text("PRAGMA table_info(master_papers)")).mappings().all()
         existing = {row["name"] for row in rows}
-        for column, definition in required.items():
+        for column, definition in {
+            "merge_confidence": "FLOAT DEFAULT 0.5",
+            "merge_notes_json": "TEXT",
+            "source_confidence_signals_json": "TEXT",
+        }.items():
             if column not in existing:
                 connection.execute(text(f"ALTER TABLE master_papers ADD COLUMN {column} {definition}"))
+
+        rows = connection.execute(text("PRAGMA table_info(analysis_results)")).mappings().all()
+        existing = {row["name"] for row in rows}
+        for column, definition in {
+            "detailed_trend_summary": "TEXT",
+            "trend_confidence": "VARCHAR(20) DEFAULT 'low'",
+            "recent_important_papers_json": "TEXT",
+            "interest_related_papers_json": "TEXT",
+            "supporting_papers_json": "TEXT",
+            "excluded_papers_count": "INTEGER DEFAULT 0",
+        }.items():
+            if column not in existing:
+                connection.execute(text(f"ALTER TABLE analysis_results ADD COLUMN {column} {definition}"))

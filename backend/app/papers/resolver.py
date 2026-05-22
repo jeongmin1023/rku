@@ -54,7 +54,7 @@ class PaperResolver:
                     self._from_candidate(
                         candidate,
                         duplicate_status="duplicate_possible" if possible else "unique",
-                        note="잠재 중복 후보가 있지만 자동 병합 기준에는 미달했습니다." if possible else "단일 후보로 MasterPaper를 생성했습니다.",
+                        note="유사 중복 후보가 있으나 자동 병합 기준에는 미달했습니다." if possible else "단일 후보로 MasterPaper를 생성했습니다.",
                         confidence=0.45 if possible else candidate.source_confidence,
                     )
                 )
@@ -85,9 +85,9 @@ class PaperResolver:
             if (
                 translated_similarity >= 0.82
                 and _year_matches(candidate.year, master.year)
-                and _venue_matches(candidate.venue, master.venue)
+                and (_venue_matches(candidate.venue, master.venue) or _authors_overlap(candidate.authors, master.authors))
             ):
-                return master, f"translated title/venue/year match {translated_similarity:.2f}", min(0.9, translated_similarity)
+                return master, f"translated/title similarity {translated_similarity:.2f} with year and venue/author match", min(0.9, translated_similarity)
         return None, "", 0.0
 
     def _has_possible_duplicate(
@@ -108,7 +108,7 @@ class PaperResolver:
         note: str,
         confidence: float,
     ) -> MasterPaperDraft:
-        display_title = candidate.title_en or candidate.title_ko or candidate.normalized_title
+        display_title = candidate.title_ko or candidate.title_en or candidate.normalized_title
         source_key = candidate.citation_source or candidate.source
         return MasterPaperDraft(
             title_ko=candidate.title_ko,
@@ -136,7 +136,7 @@ class PaperResolver:
     def _merge(self, master: MasterPaperDraft, candidate: NormalizedPaperCandidate, note: str, confidence: float) -> None:
         master.title_ko = master.title_ko or candidate.title_ko
         master.title_en = master.title_en or candidate.title_en
-        master.display_title = master.title_en or master.title_ko or master.display_title
+        master.display_title = master.title_ko or master.title_en or master.display_title
         master.authors = _merge_unique(master.authors, candidate.authors)
         master.author_affiliations = _merge_unique(master.author_affiliations, candidate.author_affiliations)
         master.year = master.year or candidate.year
@@ -169,13 +169,7 @@ def _title_similarity(candidate: NormalizedPaperCandidate, master: MasterPaperDr
 
 
 def _translated_title_similarity(candidate: NormalizedPaperCandidate, master: MasterPaperDraft) -> float:
-    cross_pairs: list[tuple[str, str]] = []
-    if candidate.title_ko and master.title_en:
-        cross_pairs.append((normalize_title(candidate.title_ko), normalize_title(master.title_en)))
-    if candidate.title_en and master.title_ko:
-        cross_pairs.append((normalize_title(candidate.title_en), normalize_title(master.title_ko)))
-    same_pairs = [(left, right) for left in _candidate_titles(candidate) for right in _master_titles(master)]
-    pairs = cross_pairs or same_pairs
+    pairs = [(left, right) for left in _candidate_titles(candidate) for right in _master_titles(master)]
     return max((_token_similarity(left, right) for left, right in pairs), default=0.0)
 
 

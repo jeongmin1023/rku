@@ -12,9 +12,46 @@
       "doi": null,
       "uci": null,
       "abstract": "학습 성찰 데이터에 트랜스포머 모델을 적용해 학습분석 키워드를 추출한다.",
-      "keywords": ["텍스트마이닝", "Transformer", "학습분석"],
+      "keywords": ["텍스트마이닝", "Transformer", "학습분석", "자연어처리"],
       "citation_count": 3,
+      "citation_source": "dbpia",
       "url": "https://dbpia.example/papers/DBPIA-KIM-2023-002"
+    },
+    {
+      "professor_names": ["이서연", "Seoyeon Lee"],
+      "source_id": "DBPIA-LEE-2024-001",
+      "title_ko": "흉부 CT 결절 탐지를 위한 딥러닝 기반 의료 영상 분석",
+      "title_en": "Deep Learning Based Pulmonary Nodule Detection in Chest CT",
+      "authors": ["이서연", "Seoyeon Lee", "한도윤"],
+      "author_affiliations": ["샘플대학교 의공학과"],
+      "year": 2024,
+      "venue": "의료영상정보학회지",
+      "doi": "10.5555/labfit.2024.101",
+      "uci": "G704-SAMPLE.2024.101",
+      "abstract": "의료 영상과 딥러닝을 활용하여 흉부 CT 결절 탐지와 임상 의사결정 지원 가능성을 분석한다.",
+      "keywords": ["의료 영상", "딥러닝", "임상 의사결정 지원"],
+      "citation_count": 2,
+      "citation_source": "dbpia",
+      "url": "https://dbpia.example/papers/DBPIA-LEE-2024-001"
+    },
+    {
+      "professor_names": ["박지훈", "Jihoon Park"],
+      "source_id": "DBPIA-PARK-2025-001",
+      "title_ko": "감염관리 실무를 위한 디지털 감시 대시보드",
+      "title_en": "Digital Surveillance Dashboard for Infection Control Practice",
+      "authors": ["박지훈", "Jihoon Park", "오수민"],
+      "author_affiliations": [],
+      "year": 2025,
+      "venue": "환자안전정보학회지",
+      "doi": "10.5555/labfit.2025.301",
+      "uci": "G704-SAMPLE.2025.301",
+      "abstract": "감염관리와 환자안전을 위한 병원 업무 흐름 기반 대시보드 사례를 분석한다.",
+      "keywords": ["감염관리", "환자안전", "보건정보"],
+      "citation_count": 0,
+      "citation_source": "dbpia",
+      "url": "https://dbpia.example/papers/DBPIA-PARK-2025-001",
+      "name_only_match": true,
+      "source_confidence": 0.65
     }
   ]
 }
