@@ -1,0 +1,20 @@
+{
+  "papers": [
+    {
+      "professor_names": ["김민준", "Minjun Kim"],
+      "source_id": "DBPIA-KIM-2023-002",
+      "title_ko": "트랜스포머를 활용한 학습 성찰 텍스트 마이닝",
+      "title_en": "Text Mining of Student Reflection Data Using Transformer Models",
+      "authors": ["김민준", "Minjun Kim", "최아리"],
+      "author_affiliations": ["샘플대학교 컴퓨터공학과"],
+      "year": 2023,
+      "venue": "학습분석학회지",
+      "doi": null,
+      "uci": null,
+      "abstract": "학습 성찰 데이터에 트랜스포머 모델을 적용해 학습분석 키워드를 추출한다.",
+      "keywords": ["텍스트마이닝", "Transformer", "학습분석"],
+      "citation_count": 3,
+      "url": "https://dbpia.example/papers/DBPIA-KIM-2023-002"
+    }
+  ]
+}

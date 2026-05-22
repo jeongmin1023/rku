@@ -1,0 +1,103 @@
+{
+  "results": [
+    {
+      "professor_names": ["김민준", "Minjun Kim"],
+      "id": "https://openalex.org/WKIM2025001",
+      "title": "Large Language Model Assisted Feedback for Personalized Learning Services",
+      "publication_year": 2025,
+      "doi": "https://doi.org/10.5555/labfit.2025.001",
+      "primary_location": {"source": {"display_name": "Journal of Educational AI"}},
+      "cited_by_count": 21,
+      "abstract": "LLM based educational services use natural language processing, learner feedback, and recommender systems.",
+      "keywords": ["LLM", "NLP", "Education AI"],
+      "concepts": [{"display_name": "Natural language processing"}, {"display_name": "Recommender system"}],
+      "authorships": [
+        {"author": {"display_name": "Minjun Kim"}, "institutions": [{"display_name": "Sample University Department of Computer Science"}]},
+        {"author": {"display_name": "Ari Choi"}, "institutions": [{"display_name": "Sample University"}]}
+      ],
+      "source_confidence": 0.9
+    },
+    {
+      "professor_names": ["김민준", "Minjun Kim"],
+      "id": "https://openalex.org/WKIM2023002",
+      "title": "Text Mining of Student Reflection Data Using Transformer Models",
+      "publication_year": 2023,
+      "doi": null,
+      "primary_location": {"source": {"display_name": "Learning Analytics Review"}},
+      "cited_by_count": 25,
+      "abstract": "Transformer models and text mining are applied to student reflection data for learning analytics.",
+      "keywords": ["Text mining", "Transformer", "Learning analytics"],
+      "concepts": [{"display_name": "Text mining"}, {"display_name": "Transformer"}],
+      "authorships": [
+        {"author": {"display_name": "Minjun Kim"}, "institutions": [{"display_name": "Sample University Computer Science"}]},
+        {"author": {"display_name": "Ari Choi"}, "institutions": [{"display_name": "Sample University"}]}
+      ],
+      "source_confidence": 0.88
+    },
+    {
+      "professor_names": ["김민준", "Minjun Kim"],
+      "id": "https://openalex.org/WKIM2016003",
+      "title": "Collaborative Filtering for Digital Library Recommendation",
+      "publication_year": 2016,
+      "doi": "10.5555/labfit.2016.003",
+      "primary_location": {"source": {"display_name": "Information Systems"}},
+      "cited_by_count": 111,
+      "abstract": "A recommender system for digital libraries is proposed with collaborative filtering and user modeling.",
+      "keywords": ["Recommender system", "Collaborative filtering", "Information retrieval"],
+      "concepts": [{"display_name": "Recommender system"}],
+      "authorships": [
+        {"author": {"display_name": "M. Kim"}, "institutions": [{"display_name": "Sample University"}]}
+      ],
+      "source_confidence": 0.86
+    },
+    {
+      "professor_names": ["이서연", "Seoyeon Lee"],
+      "id": "https://openalex.org/WLEE2024101",
+      "title": "Deep Learning Based Pulmonary Nodule Detection in Chest CT",
+      "publication_year": 2024,
+      "doi": "10.5555/labfit.2024.101",
+      "primary_location": {"source": {"display_name": "Medical Image Analysis Practice"}},
+      "cited_by_count": 31,
+      "abstract": "Medical imaging and deep learning support pulmonary nodule detection and clinical decision support.",
+      "keywords": ["Medical imaging", "Deep learning", "Clinical decision support"],
+      "concepts": [{"display_name": "Medical imaging"}, {"display_name": "Deep learning"}],
+      "authorships": [
+        {"author": {"display_name": "Seoyeon Lee"}, "institutions": [{"display_name": "Sample University Biomedical Engineering"}]},
+        {"author": {"display_name": "Doyun Han"}, "institutions": [{"display_name": "Sample University Hospital"}]}
+      ],
+      "source_confidence": 0.88
+    },
+    {
+      "professor_names": ["이서연", "Seoyeon Lee"],
+      "id": "https://openalex.org/WLEE2022404",
+      "title": "Plasma Simulation for Semiconductor Process Optimization",
+      "publication_year": 2022,
+      "doi": "10.5555/other.2022.404",
+      "primary_location": {"source": {"display_name": "Semiconductor Engineering Letters"}},
+      "cited_by_count": 44,
+      "abstract": "Plasma simulation is used for semiconductor process optimization.",
+      "keywords": ["Semiconductor", "Plasma", "Optimization"],
+      "concepts": [{"display_name": "Semiconductor manufacturing"}],
+      "authorships": [
+        {"author": {"display_name": "Seoyeon Lee"}, "institutions": [{"display_name": "Other University Department of Electrical Engineering"}]}
+      ],
+      "source_confidence": 0.87
+    },
+    {
+      "professor_names": ["박지훈", "Jihoon Park"],
+      "id": "https://openalex.org/WPARK2025301",
+      "title": "Digital Surveillance Dashboard for Infection Control Practice",
+      "publication_year": 2025,
+      "doi": "10.5555/labfit.2025.301",
+      "primary_location": {"source": {"display_name": "Journal of Patient Safety Informatics"}},
+      "cited_by_count": 5,
+      "abstract": "A dashboard for infection control and patient safety is evaluated in hospital workflows.",
+      "keywords": ["Infection control", "Patient safety", "Health informatics"],
+      "concepts": [{"display_name": "Patient safety"}, {"display_name": "Health informatics"}],
+      "authorships": [
+        {"author": {"display_name": "Jihoon Park"}, "institutions": [{"display_name": "Sample University Nursing"}]}
+      ],
+      "source_confidence": 0.86
+    }
+  ]
+}

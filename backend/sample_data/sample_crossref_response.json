@@ -1,0 +1,58 @@
+{
+  "items": [
+    {
+      "professor_names": ["김민준", "Minjun Kim"],
+      "source_id": "CR-KIM-2025-001",
+      "title": ["Large Language Model Assisted Feedback for Personalized Learning Services"],
+      "author": [{"given": "Minjun", "family": "Kim"}, {"given": "Ari", "family": "Choi"}],
+      "author_affiliations": ["Sample University Department of Computer Science"],
+      "published-print": {"date-parts": [[2025]]},
+      "container-title": ["Journal of Educational AI"],
+      "DOI": "10.5555/labfit.2025.001",
+      "abstract": "Metadata record for an LLM based personalized learning feedback paper.",
+      "subject": ["Education", "Natural language processing"],
+      "is-referenced-by-count": 0,
+      "URL": "https://doi.org/10.5555/labfit.2025.001"
+    },
+    {
+      "professor_names": ["김민준", "Minjun Kim"],
+      "source_id": "CR-KIM-2016-003",
+      "title": ["Collaborative Filtering for Digital Library Recommendation"],
+      "author": [{"given": "Minjun", "family": "Kim"}],
+      "author_affiliations": ["Sample University"],
+      "published-print": {"date-parts": [[2016]]},
+      "container-title": ["Information Systems"],
+      "DOI": "10.5555/labfit.2016.003",
+      "subject": ["Recommender system"],
+      "is-referenced-by-count": 0,
+      "URL": "https://doi.org/10.5555/labfit.2016.003"
+    },
+    {
+      "professor_names": ["이서연", "Seoyeon Lee"],
+      "source_id": "CR-LEE-2024-101",
+      "title": ["Deep Learning Based Pulmonary Nodule Detection in Chest CT"],
+      "author": [{"given": "Seoyeon", "family": "Lee"}, {"given": "Doyun", "family": "Han"}],
+      "author_affiliations": ["Sample University Biomedical Engineering"],
+      "published-online": {"date-parts": [[2024]]},
+      "container-title": ["Medical Image Analysis Practice"],
+      "DOI": "10.5555/labfit.2024.101",
+      "abstract": "Crossref metadata for a medical imaging paper.",
+      "subject": ["Medical imaging", "Deep learning"],
+      "is-referenced-by-count": 0,
+      "URL": "https://doi.org/10.5555/labfit.2024.101"
+    },
+    {
+      "professor_names": ["박지훈", "Jihoon Park"],
+      "source_id": "CR-PARK-2025-301",
+      "title": ["Digital Surveillance Dashboard for Infection Control Practice"],
+      "author": [{"given": "Jihoon", "family": "Park"}],
+      "author_affiliations": ["Sample University Nursing"],
+      "published-online": {"date-parts": [[2025]]},
+      "container-title": ["Journal of Patient Safety Informatics"],
+      "DOI": "10.5555/labfit.2025.301",
+      "subject": ["Infection control", "Patient safety"],
+      "is-referenced-by-count": 0,
+      "URL": "https://doi.org/10.5555/labfit.2025.301"
+    }
+  ]
+}

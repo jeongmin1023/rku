@@ -1,0 +1,96 @@
+from __future__ import annotations
+
+import json
+from typing import Any
+
+from app.models import AnalysisResult, MasterPaper, ProfessorPaper
+
+
+def loads_json(value: str | None, fallback: Any) -> Any:
+    if not value:
+        return fallback
+    try:
+        return json.loads(value)
+    except json.JSONDecodeError:
+        return fallback
+
+
+def master_paper_to_dict(master: MasterPaper) -> dict[str, Any]:
+    return {
+        "id": master.id,
+        "title_ko": master.title_ko,
+        "title_en": master.title_en,
+        "display_title": master.display_title,
+        "authors": loads_json(master.authors_json, []),
+        "author_affiliations": loads_json(master.author_affiliations_json, []),
+        "year": master.year,
+        "venue": master.venue,
+        "doi": master.doi,
+        "uci": master.uci,
+        "abstract": master.abstract,
+        "keywords": loads_json(master.keywords_json, []),
+        "source_list": loads_json(master.source_list_json, []),
+        "source_ids": loads_json(master.source_ids_json, {}),
+        "citation_signals": loads_json(master.citation_signals_json, {}),
+        "duplicate_status": master.duplicate_status,
+        "merge_confidence": master.merge_confidence,
+        "merge_notes": loads_json(master.merge_notes_json, []),
+        "source_confidence_signals": loads_json(master.source_confidence_signals_json, {}),
+        "url": master.url,
+    }
+
+
+def professor_paper_to_dict(link: ProfessorPaper) -> dict[str, Any]:
+    return {
+        "id": link.id,
+        "master_paper": master_paper_to_dict(link.master_paper),
+        "match_score": link.match_score,
+        "match_status": link.match_status,
+        "author_role": link.author_role,
+        "evidence_notes": loads_json(link.evidence_notes_json, {}),
+        "warnings": loads_json(link.warnings_json, []),
+    }
+
+
+def analysis_to_dict(analysis: AnalysisResult | None) -> dict[str, Any]:
+    if analysis is None:
+        return empty_analysis()
+    return {
+        "trend_summary": analysis.trend_summary,
+        "recent_keywords": loads_json(analysis.recent_keywords, []),
+        "five_year_keywords": loads_json(analysis.five_year_keywords, []),
+        "overall_keywords": loads_json(analysis.overall_keywords, []),
+        "timeline": loads_json(analysis.timeline_json, {}),
+        "representative_papers": loads_json(analysis.representative_papers_json, []),
+        "recent_papers": loads_json(analysis.recent_papers_json, []),
+        "evidence_confidence": analysis.evidence_confidence,
+        "warnings": loads_json(analysis.warnings_json, []),
+    }
+
+
+def empty_analysis() -> dict[str, Any]:
+    return {
+        "trend_summary": "논문 수집 전입니다. 공개 논문과 연구실 정보를 수집한 뒤 연구 경향을 확인할 수 있습니다.",
+        "recent_keywords": [],
+        "five_year_keywords": [],
+        "overall_keywords": [],
+        "timeline": {},
+        "representative_papers": [],
+        "recent_papers": [],
+        "evidence_confidence": "low",
+        "warnings": ["논문 수집 전"],
+    }
+
+
+def linked_paper_analysis_dict(link: ProfessorPaper) -> dict[str, Any]:
+    master = master_paper_to_dict(link.master_paper)
+    master.update(
+        {
+            "match_score": link.match_score,
+            "match_status": link.match_status,
+            "author_role": link.author_role,
+            "evidence_notes": loads_json(link.evidence_notes_json, {}),
+            "warnings": loads_json(link.warnings_json, []),
+        }
+    )
+    return master
