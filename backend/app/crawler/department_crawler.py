@@ -57,7 +57,7 @@ def crawl_department_page(university: str, department: str, url: str) -> CrawlRe
 
 def parse_professors(html: str, university: str, department: str, source_url: str) -> list[ProfessorCandidate]:
     soup = BeautifulSoup(html, "html.parser")
-    for noisy in soup(["script", "style", "noscript"]):
+    for noisy in soup(["script", "style", "noscript", "nav", "header", "footer", "aside"]):
         noisy.decompose()
 
     candidates: list[ProfessorCandidate] = []
