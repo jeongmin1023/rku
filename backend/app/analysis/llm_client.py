@@ -17,7 +17,7 @@ except ImportError:  # pragma: no cover - dependency is listed, fallback keeps l
 load_dotenv()
 
 DEFAULT_PROVIDER = "gemini"
-DEFAULT_MODEL = "gemini-1.5-flash"
+DEFAULT_MODEL = "gemini-2.5-flash"
 DEFAULT_TIMEOUT_SECONDS = 12
 
 
@@ -86,7 +86,10 @@ def call_gemini_json(prompt: str) -> dict[str, Any]:
         raise LLMCallError("Gemini request failed; using fallback.") from exc
 
     if response.status_code in {401, 403, 408, 409, 429} or response.status_code >= 500:
-        raise LLMCallError(f"Gemini returned status {response.status_code}; using fallback.")
+        body_preview = response.text[:500]
+        raise LLMCallError(
+            f"Gemini returned status {response.status_code}: {body_preview}"
+)
     if response.status_code >= 400:
         raise LLMCallError(f"Gemini request was not accepted ({response.status_code}); using fallback.")
 

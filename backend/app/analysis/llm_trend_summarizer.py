@@ -1,4 +1,5 @@
 from __future__ import annotations
+from app.analysis.llm_professor_analyzer import analyze_professor_with_llm
 
 import json
 from typing import Any
@@ -17,7 +18,11 @@ def summarize_trend(payload: dict[str, Any]) -> dict[str, Any]:
     fallback = template_summary(payload)
     try:
         data = llm_client.call_llm_json(_prompt(payload))
-    except (llm_client.LLMUnavailable, llm_client.LLMCallError, ValueError):
+    except (llm_client.LLMUnavailable, llm_client.LLMCallError, ValueError) as exc:
+        fallback["warnings"] = list(fallback.get("warnings") or [])
+        fallback["warnings"].append(f"LLM trend_summary fallback: {exc}")
+        fallback["llm_used"] = False
+        fallback["llm_provider"] = None
         return fallback
 
     warnings = list(dict.fromkeys([*_as_list(data.get("warnings")), *fallback["warnings"]]))

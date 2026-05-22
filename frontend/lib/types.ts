@@ -1,6 +1,17 @@
 export type Confidence = "high" | "medium" | "low";
-export type MatchStatus = "accepted" | "needs_review" | "weak_candidate" | "rejected";
-export type AnalysisType = "paper_based" | "domestic_db_based" | "emerging_lab" | "data_limited" | string;
+
+export type MatchStatus =
+  | "accepted"
+  | "needs_review"
+  | "weak_candidate"
+  | "rejected";
+
+export type AnalysisType =
+  | "paper_based"
+  | "domestic_db_based"
+  | "emerging_lab"
+  | "data_limited"
+  | string;
 
 export type Department = {
   id: number;
@@ -37,16 +48,13 @@ export type ProfessorCard = Professor & {
   five_year_keywords?: string[];
   overall_keywords?: string[];
   trend_confidence?: Confidence | string;
-  llm_used?: boolean;
-  llm_provider?: string | null;
   warnings: string[];
   accepted_paper_count?: number;
   needs_review_paper_count?: number;
-  weak_candidate_count?: number;
   rejected_paper_count?: number;
-  source_coverage?: Record<string, number>;
   accepted_count?: number;
   needs_review_count?: number;
+  weak_candidate_count?: number;
   rejected_count?: number;
   source_candidate_count?: number;
   master_paper_count?: number;
@@ -58,19 +66,16 @@ export type ProfessorCard = Professor & {
   usable_rate?: number;
   candidate_pool_rate?: number;
   excluded_rate?: number;
+  source_coverage?: Record<string, number>;
+  llm_used?: boolean;
+  llm_provider?: string | null;
+  llm_usage_summary?: Record<string, unknown>;
 };
 
 export type CrawlResponse = {
   department: Department;
   professors: Professor[];
   warnings: string[];
-  paper_summary?: string | null;
-  main_topic?: string | null;
-  method_or_focus?: string | null;
-  why_it_matters?: string | null;
-  summary_limitations?: string[];
-  why_read_this?: string | null;
-  category_reason?: string | null;
 };
 
 export type ConfirmProfessor = {
@@ -100,8 +105,8 @@ export type MasterPaper = {
   abstract?: string | null;
   keywords: string[];
   source_list: string[];
-  source_ids: Record<string, string[]>;
-  citation_signals: Record<string, number | null>;
+  source_ids: Record<string, unknown>;
+  citation_signals: Record<string, number | string | null>;
   duplicate_status: string;
   merge_confidence?: number;
   merge_notes?: string[];
@@ -117,27 +122,38 @@ export type ProfessorPaper = {
   author_role?: string | null;
   evidence_notes: Record<string, unknown>;
   warnings: string[];
+  paper_summary?: string | null;
+  main_topic?: string | null;
+  method_or_focus?: string | null;
+  why_it_matters?: string | null;
+  summary_limitations?: string[];
+  why_read_this?: string | null;
+  category_reason?: string | null;
+  llm_used?: boolean;
+  llm_provider?: string | null;
 };
 
 export type AnalysisPaper = {
-  id?: number;
+  id?: number | string;
   title?: string;
   year?: number | null;
   venue?: string | null;
-  citation_signals?: Record<string, number | null>;
+  citation_signals?: Record<string, number | string | null>;
   source_list?: string[];
   match_status?: MatchStatus;
   author_role?: string | null;
   category?: string;
   label?: string;
   reason?: string;
-  category_reason?: string;
-  why_read_this?: string;
+  category_reason?: string | null;
+  why_read_this?: string | null;
   paper_summary?: string | null;
   main_topic?: string | null;
   method_or_focus?: string | null;
   why_it_matters?: string | null;
   summary_limitations?: string[];
+  llm_used?: boolean;
+  llm_provider?: string | null;
 };
 
 export type Analysis = {
@@ -150,16 +166,17 @@ export type Analysis = {
   overall_keywords: string[];
   timeline: Record<string, string[]>;
   trend_confidence?: Confidence | string;
+  evidence_confidence: Confidence | string;
   representative_papers: AnalysisPaper[];
   recent_important_papers?: AnalysisPaper[];
   recent_papers: AnalysisPaper[];
   interest_related_papers?: AnalysisPaper[];
   supporting_papers?: AnalysisPaper[];
   excluded_papers_count?: number;
-  evidence_confidence: Confidence | string;
   warnings: string[];
   llm_used?: boolean;
   llm_provider?: string | null;
+  llm_usage_summary?: Record<string, unknown>;
 };
 
 export type ProfessorDetail = Professor & {
@@ -197,13 +214,17 @@ export type FitRequest = {
 };
 
 export type FitResult = {
-  fit_level: "높음" | "중간~높음" | "중간" | "낮음" | "판단 보류" | "중간, 확인 필요" | string;
+  fit_level:
+    | "높음"
+    | "중간~높음"
+    | "중간"
+    | "낮음"
+    | "판단 보류"
+    | "중간, 확인 필요"
+    | string;
   interpretation: string;
   matched_keywords: string[];
-  related_papers: Array<AnalysisPaper & {
-    connection_reason?: string;
-    connection_signal?: number;
-  }>;
+  related_papers: AnalysisPaper[];
   check_points: string[];
   evidence_confidence: Confidence | string;
 };
@@ -212,7 +233,7 @@ export type ContactCard = {
   professor_id: number;
   professor_name: string;
   reading_list: Array<{
-    id?: number;
+    id?: number | string;
     title?: string;
     year?: number | null;
     venue?: string | null;
